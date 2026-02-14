@@ -1344,28 +1344,30 @@ function App() {
         setLeaves([]);
       }
 
-      /* ===== 4) LEAVE CALCULATION TABLE ===== */
-      const calcRows = await window.fetchOneDriveTable("leaveCalc").catch(()=>null);
-      if (calcRows) setLeaveCalcData(calcRows);
-      if (calcRows && calcRows.length) {
-       setLeaveSummary({
-  allottedCL:0, allottedSL:0,
-  usedCL:0, usedSL:0,
-  availableCL:0, availableSL:0
-});
+      
+   /* ===== 4) LEAVE CALCULATION TABLE ===== */
+const calcRows = await window.fetchOneDriveTable("leaveCalc").catch(()=>null);
 
-        } else {
-          console.debug("No leaveCalc row matched current user; preserving previous leaveSummary.");
-        }
-      } else if (calcRows === null) {
-        console.warn("leaveCalc fetch failed; preserving leaveSummary.");
-      } else {
-        setLeaveSummary({
-          allottedCL:0, allottedSL:0,
-          usedCL:0, usedSL:0,
-          availableCL:0, availableSL:0
-        });
-      }
+if (calcRows && calcRows.length) {
+  setLeaveCalcData(calcRows);
+
+  // reset summary (actual filtering happens later)
+  setLeaveSummary({
+    allottedCL:0, allottedSL:0,
+    usedCL:0, usedSL:0,
+    availableCL:0, availableSL:0
+  });
+
+} else if (calcRows === null) {
+  console.warn("leaveCalc fetch failed; preserving leaveSummary.");
+} else {
+  setLeaveCalcData([]);
+  setLeaveSummary({
+    allottedCL:0, allottedSL:0,
+    usedCL:0, usedSL:0,
+    availableCL:0, availableSL:0
+  });
+}
 
       /* ===== 5) WEEKLY AGENDA TABLE ===== */
       const agendaRows = await window.fetchOneDriveTable("weeklyAgenda").catch(()=>null);
@@ -1599,6 +1601,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
