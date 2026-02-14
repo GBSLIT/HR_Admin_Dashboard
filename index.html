@@ -60,63 +60,118 @@ return(
 }
 
 /* ================= CHARTS ================= */
+function AttendanceChart({ attendance }) {
+  const canvasRef = React.useRef(null);
+  const chartRef = React.useRef(null);
 
-function AttendanceChart({attendance}){
-const ref=useRef()
+  useEffect(() => {
+    if (!attendance.length) return;
 
-useEffect(()=>{
-const map={}
-attendance.forEach(a=>{
-const key=a.month+"-"+a.year
-map[key]=(map[key]||0)+1
-})
+    const monthMap = {};
+    attendance.forEach(a => {
+      const key = `${a.month}-${a.year}`;
+      monthMap[key] = (monthMap[key] || 0) + 1;
+    });
 
-new Chart(ref.current,{
-type:"line",
-data:{labels:Object.keys(map),datasets:[{label:"Attendance",data:Object.values(map)}]}
-})
-},[attendance])
+    const labels = Object.keys(monthMap);
+    const data = Object.values(monthMap);
 
-return <div className="card"><h3>Attendance Trend</h3><canvas ref={ref}></canvas></div>
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Attendance Count",
+          data
+        }]
+      }
+    });
+
+    return () => chartRef.current?.destroy();
+
+  }, [attendance]);
+
+  return (
+    <div className="card">
+      <strong>Attendance Trend</strong>
+      <canvas ref={canvasRef}></canvas>
+    </div>
+  );
+}
+function LeaveChart({ leaves }) {
+  const canvasRef = React.useRef(null);
+  const chartRef = React.useRef(null);
+
+  useEffect(() => {
+    if (!leaves.length) return;
+
+    let cl = 0, sl = 0;
+    leaves.forEach(l => {
+      if ((l.type || "").includes("Casual")) cl += l.appliedDays;
+      if ((l.type || "").includes("Sick")) sl += l.appliedDays;
+    });
+
+    if (chartRef.current) chartRef.current.destroy();
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: "pie",
+      data: {
+        labels: ["Casual Leave","Sick Leave"],
+        datasets: [{ data: [cl, sl] }]
+      }
+    });
+
+    return () => chartRef.current?.destroy();
+
+  }, [leaves]);
+
+  return (
+    <div className="card">
+      <strong>Leave Distribution</strong>
+      <canvas ref={canvasRef}></canvas>
+    </div>
+  );
+}
+function TaskChart({ agenda }) {
+  const canvasRef = React.useRef(null);
+  const chartRef = React.useRef(null);
+
+  useEffect(() => {
+    if (!agenda.length) return;
+
+    let complete = 0, pending = 0;
+    agenda.forEach(t => {
+      if (Number(t.completionPercent) >= 100) complete++;
+      else pending++;
+    });
+
+    if (chartRef.current) chartRef.current.destroy();
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: "doughnut",
+      data: {
+        labels: ["Completed","Pending"],
+        datasets: [{ data: [complete, pending] }]
+      }
+    });
+
+    return () => chartRef.current?.destroy();
+
+  }, [agenda]);
+
+  return (
+    <div className="card">
+      <strong>Task Completion</strong>
+      <canvas ref={canvasRef}></canvas>
+    </div>
+  );
 }
 
-function LeaveChart({leaves}){
-const ref=useRef()
 
-useEffect(()=>{
-let cl=0,sl=0
-leaves.forEach(l=>{
-if(l.type.includes("Casual"))cl+=l.appliedDays
-if(l.type.includes("Sick"))sl+=l.appliedDays
-})
-
-new Chart(ref.current,{
-type:"pie",
-data:{labels:["CL","SL"],datasets:[{data:[cl,sl]}]}
-})
-},[leaves])
-
-return <div className="card"><h3>Leave Distribution</h3><canvas ref={ref}></canvas></div>
-}
-
-function TaskChart({agenda}){
-const ref=useRef()
-
-useEffect(()=>{
-let done=0,pending=0
-agenda.forEach(t=>{
-if(Number(t.completionPercent)>=100)done++
-else pending++
-})
-
-new Chart(ref.current,{
-type:"doughnut",
-data:{labels:["Done","Pending"],datasets:[{data:[done,pending]}]}
-})
-},[agenda])
-
-return <div className="card"><h3>Task Status</h3><canvas ref={ref}></canvas></div>
-}
 
 /* ================= DASHBOARD ================= */
 
@@ -176,7 +231,12 @@ return(
 
 <select className="search" value={selected} onChange={e=>setSelected(e.target.value)}>
 <option value="">All Employees</option>
-{employees.map(e=><option value={e.email}>{e.name}</option>)}
+{employees.map(e => (
+  <option key={e.email} value={e.email}>
+    {e.name}
+  </option>
+))}
+
 </select>
 
 </div>
@@ -193,3 +253,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>)
 
 </body>
 </html>
+
