@@ -1,256 +1,1608 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8" />
-<title>HR Dashboard</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Employee Dashboard - Global</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-<script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MSAL (global) -->
+  <script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>
 
-<style>
-body{font-family:Inter;background:#f6f8fb;margin:0}
-.app{display:flex}
-.sidebar{width:220px;background:#fff;padding:20px;height:100vh}
-.main{flex:1;padding:28px}
-.kpi-row{display:flex;gap:12px;flex-wrap:wrap}
-.kpi{background:#fff;padding:16px;border-radius:12px;min-width:200px}
-.card{background:#fff;padding:16px;border-radius:12px;margin-top:16px}
-.row{display:flex;gap:16px}
-.search{padding:8px;border-radius:8px}
-</style>
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --muted:#64748b;
+      --accent:#2563eb; --radius:14px;
+    }
+    html,body,#root{height:100%; margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%); color:#0f172a;}
+    .app { display:flex; min-height:100vh; }
+
+    .sidebar {
+      width:220px; background:rgba(255,255,255,0.92);
+      box-shadow: 8px 0 24px rgba(15,23,42,0.03);
+      padding:20px; border-right:1px solid #eef2f7;
+      position:sticky; top:0; height:100vh; box-sizing:border-box;
+    }
+
+    .logo{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      font-size:18px;
+      margin-bottom:18px;
+    }
+    .nav { margin-top:18px; display:flex; flex-direction:column; gap:6px; }
+    .nav button {
+      text-align:left; background:none; border:none;
+      padding:10px 12px; border-radius:10px;
+      cursor:pointer; color:#0f172a; font-weight:500;
+    }
+    .logo img{
+      height:68px;    /* control size here */
+      width:auto;
+      display:block;
+    }
+    .nav button:hover{ background:#f1f5f9; }
+    .nav .active{
+      background:linear-gradient(90deg, rgba(37,99,235,0.1), rgba(80,123,255,0.03));
+      color:var(--accent);
+    }
+
+    .main { flex:1; padding:28px; box-sizing:border-box; }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .kpi-row { display:flex; gap:12px; flex-wrap:wrap; }
+    .kpi {
+      background:var(--card); border-radius:12px;
+      padding:16px; box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+      min-width:270px;
+    }
+    .kpi .label{ color:var(--muted); font-size:12px; }
+    .kpi .value{ font-size:20px; font-weight:700; margin-top:6px; }
+
+    .card {
+      background:var(--card); border-radius:12px;
+      padding:16px; box-shadow: 0 8px 28px rgba(15,23,42,0.03);
+      margin-top:16px;
+    }
+
+    .row { display:flex; gap:16px; align-items:flex-start; }
+    .col-2 { display:flex; flex-direction:column; gap:16px; flex:1; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td {
+      text-align:left; padding:10px 8px;
+      border-bottom:1px solid #f1f5f9;
+      font-size:14px;
+    }
+
+    .muted { color:var(--muted); font-size:13px; }
+    .small { font-size:13px; color:var(--muted); }
+
+    .btn {
+      background:var(--accent); color:#fff;
+      border:none; padding:8px 14px;
+      border-radius:10px; cursor:pointer;
+      font-weight:600;
+    }
+
+    .btn-outline {
+      background:#eef2ff;
+      color:#1e293b;
+      border:none;
+      padding:10px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:500;
+    }
+
+    .search {
+      padding:8px 12px; border-radius:10px;
+      border:1px solid #eef2f7; width:220px;
+    }
+
+    .login-wrap {
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .login-card {
+      width:420px; background:var(--card);
+      padding:28px; border-radius:16px;
+      box-shadow: 0 12px 40px rgba(15,23,42,0.06);
+    }
+
+    .summary-card {
+      min-width:260px;
+    }
+    .summary-row {
+      display:flex;
+      justify-content:space-between;
+      padding:6px 0;
+      border-bottom:1px solid #f1f5f9;
+      font-size:13px;
+    }
+
+    footer { margin-top:24px; color:var(--muted); font-size:13px; }
+
+    @media (max-width:1100px){
+      .row{flex-direction:column;}
+      .summary-card{width:100%;}
+    }
+    @media (max-width:900px){
+      .sidebar{display:none;}
+      .main{padding:14px;}
+      .kpi{min-width:140px;}
+    }
+
+    /* Profile layout */
+    .profile-layout{
+      display:flex;
+      gap:18px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .profile-card{
+      flex:1;
+      min-width:280px;
+    }
+    .profile-avatar{
+      width:140px;
+      height:140px;
+      border-radius:50%;
+      background:#eef2ff;
+      overflow:hidden;
+      margin-right:24px;
+      flex-shrink:0;
+    }
+    .profile-avatar img{
+      width:100%;height:100%;object-fit:cover;
+    }
+    .profile-grid{
+      display:grid;
+      grid-template-columns:120px 1fr;
+      row-gap:6px;
+      column-gap:12px;
+      font-size:14px;
+    }
+    .profile-label{font-weight:600;color:#475569;}
+    .qa-buttons{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:8px;
+    }
+
+    /* ========== Mobile menu (added) ========== */
+    .hamburger { display:none; width:44px; height:36px; border-radius:8px;
+      background:transparent; border:1px solid rgba(15,23,42,0.06);
+      align-items:center; justify-content:center; cursor:pointer; padding:0;
+    }
+    .hamburger .bar { width:20px; height:2px; background:#0f172a; display:block; border-radius:2px; position:relative; }
+    .hamburger .bar::before, .hamburger .bar::after { content:""; position:absolute; left:0; right:0; height:2px; background:#0f172a; border-radius:2px; }
+    .hamburger .bar::before { top:-6px; } .hamburger .bar::after { top:6px; }
+
+    .mobile-sidebar-backdrop {
+      position:fixed; inset:0; background:rgba(10,15,25,0.35);
+      z-index:1200; display:none;
+    }
+    .mobile-sidebar {
+      position:fixed; top:0; left:0; height:100vh; width:260px; max-width:85%;
+      background:rgba(255,255,255,0.98); padding:20px;
+      box-shadow: 6px 0 30px rgba(2,6,23,0.2);
+      transform:translateX(-110%); transition: transform .28s cubic-bezier(.2,.9,.3,1);
+      z-index:1300; box-sizing:border-box; overflow:auto;
+    }
+    .mobile-sidebar.open { transform:translateX(0%); }
+    .mobile-sidebar-backdrop.open { display:block; }
+
+    @media (max-width:900px){
+      .hamburger { display:flex; }
+    }
+    /* ========== end mobile menu ========== */
+
+  </style>
 </head>
 
 <body>
 <div id="root"></div>
 
+<!-- ========= MSAL / GRAPH HELPER (NON-MODULE) ========= -->
+<script>
+  const CLIENT_ID    = "27917652-ca62-4409-b37c-e47df77bfce9";
+  const TENANT_ID    = "93846c24-8666-4033-8b6e-901877a2cf98";
+  const REDIRECT_URI = "https://gbslit.github.io/Employee_Dashboard/";
+  const DRIVE_ID     = "b!btaPqJ-5kU-kkE4KEoaxo8fltt6l6xpLs60U3YTj_EAxQMgJa8fsSLceYscvhxNo";
+  const FILE_ID      = "016GCLEJF6QPT4M3PLEFEITOFBJOBB4R2E";
+
+  const TABLES = {
+    employees:    "Employees",
+    attendance:   "Attendance",
+    leaves:       "Leaves",
+    leaveCalc:    "Leave_Calculation",
+    weeklyAgenda: "Weekly_Agenda"
+  };
+
+  const msalConfig = {
+    auth: {
+      clientId: CLIENT_ID,
+      authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+      redirectUri: REDIRECT_URI
+    },
+    cache: {
+      cacheLocation: "localStorage",
+      storeAuthStateInCookie: true
+    }
+  };
+
+  const SCOPES = ["Files.Read.All","User.Read","Sites.Read.All"];
+
+  const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+  // NEW: do not auto-popup; try silent only and return null if not available
+  async function getToken() {
+    // Try to get cached account first
+    let account = msalInstance.getAllAccounts()[0];
+
+    if (!account) {
+      // no account in cache - do not auto-open popup here.
+      console.debug("[auth] No MSAL account found in cache.");
+      return null;
+    }
+
+    try {
+      // Attempt silent token acquisition (standard & recommended)
+      const tokenResponse = await msalInstance.acquireTokenSilent({
+        scopes: SCOPES,
+        account
+      });
+      return tokenResponse.accessToken;
+    } catch (err) {
+      // silent acquisition failed (expired / interaction required / same-site cookies blocked)
+      // We will NOT auto-call loginPopup here (prevents unexpected prompt on refresh).
+      console.warn("[auth] acquireTokenSilent failed:", err);
+      return null;
+    }
+  }
+
+  // small fetch-with-retry util used by auto-refresh
+  async function fetchWithRetry(url, opts = {}, retries = 2, baseDelay = 600) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const r = await fetch(url, opts);
+        if (!r.ok) {
+          const txt = await r.text().catch(()=>'');
+          const err = new Error(`HTTP ${r.status} ${txt}`);
+          err.status = r.status;
+          throw err;
+        }
+        return r;
+      } catch (err) {
+        if (attempt === retries) throw err;
+        const wait = baseDelay * Math.pow(2, attempt);
+        console.warn(`fetchWithRetry attempt ${attempt+1} failed, retrying in ${wait}ms`, err);
+        await new Promise(r=>setTimeout(r, wait));
+      }
+    }
+  }
+
+  // Fetch worksheet usedRange(valuesOnly=true) and convert to array of objects
+  window.fetchOneDriveTable = async function(tableKeyOrName) {
+    const tableName = TABLES[tableKeyOrName] || tableKeyOrName;
+    const token = await getToken();
+    if (!token) {
+      throw new Error("No access token available (silent acquisition failed).");
+    }
+    const base = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${FILE_ID}/workbook`;
+
+    // escape single quotes inside sheet name by doubling them (Graph rule: worksheets('name'))
+    const sheetNameEsc = ('' + tableName).replace(/'/g, "''");
+    const url = `${base}/worksheets('${sheetNameEsc}')/usedRange(valuesOnly=true)`;
+
+    const res = await fetchWithRetry(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      }
+    }, 2, 600);
+
+    const json = await res.json();
+    const vals = json && json.values ? json.values : [];
+
+    if (!vals || vals.length === 0) return [];
+
+    // first row = headers
+    const headers = vals[0].map(h => h === undefined || h === null ? '' : String(h).trim());
+
+    // map rows -> objects
+    const rows = vals.slice(1).map(row => {
+      const obj = {};
+      for (let i=0;i<headers.length;i++) {
+        const key = headers[i] || `Column${i+1}`;
+        obj[key] = (row && row[i] !== undefined) ? row[i] : null;
+      }
+      return obj;
+    });
+
+    return rows;
+  };
+
+  window.msalOneDrive = {
+    msalInstance,
+    async loginPopup() { return msalInstance.loginPopup({ scopes: SCOPES }); },
+    getAccount() { return msalInstance.getAllAccounts()[0] || null; }
+  };
+
+  /* ---------- Auto-refresh helpers (robust) ---------- */
+  let __autoRefreshTimer = null;
+  let __lastKnownDriveModified = null;
+  let __autoRefreshRunning = false;
+  let __autoRefreshInProgress = false;
+
+  async function tryWithRetries(fn, retries = 2, baseDelay = 600) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await fn();
+      } catch (err) {
+        if (attempt === retries) throw err;
+        const wait = baseDelay * Math.pow(2, attempt);
+        console.warn(`tryWithRetries: attempt ${attempt+1} failed, retrying in ${wait}ms`, err);
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+  }
+
+  async function fetchDriveLastModified() {
+    try {
+      const token = await getToken();
+      if (!token) {
+        console.warn("[auto-refresh] no token available for metadata request");
+        return null;
+      }
+      const url = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${FILE_ID}?ts=${Date.now()}`;
+      console.debug("[auto-refresh] fetching drive metadata:", url);
+      const res = await fetchWithRetry(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "Cache-Control": "no-cache, no-store",
+          Pragma: "no-cache"
+        }
+      }, 2, 600);
+      const json = await res.json();
+      const last = json && json.lastModifiedDateTime ? json.lastModifiedDateTime : null;
+      console.debug("[auto-refresh] lastModifiedDateTime:", last);
+      return last;
+    } catch (err) {
+      console.warn("fetchDriveLastModified failed:", err);
+      return null;
+    }
+  }
+
+  async function callLoaderWithRetries(email, maxRetries = 2) {
+    if (!email) {
+      console.warn("callLoaderWithRetries: no email provided");
+      return;
+    }
+    // prefer global exposed loader if exists
+    const loader = typeof window.loadLiveDataFor === "function" ? window.loadLiveDataFor : (typeof loadLiveDataFor === "function" ? loadLiveDataFor : null);
+    if (!loader) {
+      console.warn("callLoaderWithRetries: loader not available (not exposed globally)");
+      return;
+    }
+    await tryWithRetries(async () => {
+      console.info(`[auto-refresh] calling loader for ${email}`);
+      await loader(email);
+      console.info("[auto-refresh] loader succeeded for", email);
+    }, maxRetries, 800);
+  }
+
+  function startAutoRefresh(intervalMs = 60000) {
+    stopAutoRefresh();
+    __autoRefreshRunning = true;
+    __lastKnownDriveModified = null;
+
+    (async () => {
+      try {
+        __lastKnownDriveModified = await fetchDriveLastModified();
+        console.debug("[auto-refresh] initial lastModified:", __lastKnownDriveModified);
+      } catch (e) {
+        console.warn("[auto-refresh] initial metadata fetch failed:", e);
+      }
+    })();
+
+    __autoRefreshTimer = setInterval(async () => {
+      if (!__autoRefreshRunning) return;
+      if (__autoRefreshInProgress) return;
+      __autoRefreshInProgress = true;
+
+      try {
+        const last = await fetchDriveLastModified();
+
+        if (last === null) {
+          console.debug("[auto-refresh] metadata fetch returned null; skipping this tick.");
+          return;
+        }
+
+        if (!__lastKnownDriveModified) {
+          console.debug("[auto-refresh] setting lastKnown to", last);
+          __lastKnownDriveModified = last;
+          return;
+        }
+
+        if (last !== __lastKnownDriveModified) {
+          console.info("[auto-refresh] Drive changed:", __lastKnownDriveModified, "=>", last);
+          __lastKnownDriveModified = last;
+
+          const email = window.currentSignedInEmailForAutoRefresh ||
+            (window.msalOneDrive && window.msalOneDrive.getAccount && (() => {
+              const acct = window.msalOneDrive.getAccount();
+              return acct && (acct.username || acct.email || (acct.idTokenClaims && acct.idTokenClaims.preferred_username));
+            })());
+
+          if (email) {
+            const emailStr = ('' + email).toLowerCase();
+            try {
+              await callLoaderWithRetries(emailStr, 2);
+            } catch (loaderErr) {
+              console.error("[auto-refresh] loader still failed after retries:", loaderErr);
+            }
+          } else {
+            console.warn("[auto-refresh] no signed-in email found to call loader with");
+          }
+        } else {
+          console.debug("[auto-refresh] no change detected");
+        }
+      } catch (err) {
+        console.warn("auto refresh tick error:", err);
+      } finally {
+        __autoRefreshInProgress = false;
+      }
+    }, intervalMs);
+  }
+
+  function stopAutoRefresh() {
+    __autoRefreshRunning = false;
+    if (__autoRefreshTimer) {
+      clearInterval(__autoRefreshTimer);
+      __autoRefreshTimer = null;
+    }
+    __autoRefreshInProgress = false;
+  }
+
+</script>
+
+<!-- React UMD -->
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<!-- Babel -->
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <script type="text/babel">
+const { useState, useEffect } = React;
+const APPLY_LEAVE_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf0k4lKKmwB8LWmzPxEb07Q_X-zT8-sSDghHl79wHvtXLSDeA/viewform";
+// TEMP LINKS – replace later
+const MARK_ATTENDANCE_URL = "https://script.google.com/a/macros/globalbasesourcing.com/s/AKfycbzqqbsaeEpvXupmGG8ew95qckMPPRY3CyhJu1Fwn5jHR6ugAIrow6eSjNSRrAihxxiaCA/exec";
+const IT_HELP_TICKET_URL = "https://docs.google.com/forms/d/e/1FAIpQLScDeECNtU4AY66ExE7nP2k_fGoA0iz9jFpSMxvaZDeSsNtP7Q/viewform";
+const HIRING_REQUEST_URL = "https://docs.google.com/forms/d/e/1FAIpQLSemLc4jVjHElByCmLZPZM6VvgTvs9blMMUIHi-2dO3lQdWVSw/viewform";
+const MONTHLY_FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfuKxR0xg60CaTSpQDa2XAt9qcdQQMy37Vkryy1mX5N6xdbiA/viewform";
+const COMPANY_POLICIES_URL = "https://gbslhk-my.sharepoint.com/:p:/g/personal/hr_globalbasesourcing_com/IQApL-QNk4FES6MunLz973sMAQiEVChFJVnYHYrRPBQPh0M?e=mNe56H";
 
-const {useState,useEffect,useRef}=React;
-
-/* ================= KPI CARD ================= */
-
-function KPICard({label,value}){
-return <div className="kpi"><div>{label}</div><h2>{value}</h2></div>
+/* ---------- Excel Date / Time Helpers ---------- */
+function excelSerialToDate(value){
+  const base = new Date(Date.UTC(1899, 11, 30));
+  return new Date(base.getTime() + value * 86400000);
 }
 
-/* ================= KPI SECTION ================= */
-
-function HRKPIs({employees,attendance,leaves,agenda}){
-
-const today=new Date().toLocaleDateString("en-GB")
-
-const present=attendance.filter(a=>a.date===today && a.status==="Present").length
-const late=attendance.filter(a=>a.lateHours && a.lateHours!=="00:00:00").length
-const leaveCount=leaves.filter(l=>l.status.includes("Approved")).length
-const pending=agenda.filter(t=>Number(t.completionPercent)<100).length
-
-return(
-<div className="kpi-row">
-<KPICard label="Employees" value={employees.length}/>
-<KPICard label="Present Today" value={present}/>
-<KPICard label="Late Today" value={late}/>
-<KPICard label="On Leave" value={leaveCount}/>
-<KPICard label="Pending Tasks" value={pending}/>
-</div>)
-}
-
-/* ================= CHARTS ================= */
-function AttendanceChart({ attendance }) {
-  const canvasRef = React.useRef(null);
-  const chartRef = React.useRef(null);
-
-  useEffect(() => {
-    if (!attendance.length) return;
-
-    const monthMap = {};
-    attendance.forEach(a => {
-      const key = `${a.month}-${a.year}`;
-      monthMap[key] = (monthMap[key] || 0) + 1;
+function formatExcelDate(value) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") {
+    const date = excelSerialToDate(value);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
     });
+  }
+  return String(value);
+}
 
-    const labels = Object.keys(monthMap);
-    const data = Object.values(monthMap);
+function formatExcelTime(value) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") {
+    const totalSeconds = Math.round(value * 24 * 60 * 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return String(hours).padStart(2,"0") + ":" + String(minutes).padStart(2,"0");
+  }
+  return String(value);
+}
 
-    if (chartRef.current) {
-      chartRef.current.destroy();
+function formatExcelDuration(value) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number") {
+    const totalSeconds = Math.round(value * 24 * 60 * 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return (
+      String(hours).padStart(2,"0") + ":" +
+      String(minutes).padStart(2,"0") + ":" +
+      String(seconds).padStart(2,"0")
+    );
+  }
+  return String(value);
+}
+
+function formatDisplayDate(value) {
+  if (value === null || value === undefined || value === "") return "—";
+
+  let date = null;
+
+  if (typeof value === "number") {
+    // Excel serial
+    date = excelSerialToDate(value);
+  } else {
+    const d = new Date(value);
+    if (!isNaN(d)) date = d;
+  }
+
+  if (!date) return String(value);
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;  // dd-MMM-yyyy
+}
+
+/* ------------ Login Card ------------ */
+function LoginPage({ onSignIn, error }) {
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
+          <div style={{fontSize:20,fontWeight:700}}>Employee Dashboard</div>
+          <div style={{color:'var(--muted)',fontSize:13}}>Sign in with Microsoft 365</div>
+        </div>
+
+        <h2 style={{marginTop:6}}>Sign in</h2>
+        <p className="small">
+          Global Base — Employee Dashboard
+        </p>
+
+        {error && (
+          <div style={{color:'#dc2626',fontSize:13,marginTop:10}}>
+            {error}
+          </div>
+        )}
+
+        <div style={{marginTop:18}}>
+          <button type="button" className="btn" onClick={onSignIn} style={{width:'100%'}}>
+            Sign in with Microsoft 365
+          </button>
+        </div>
+
+        <footer style={{marginTop:16}} className="small muted">
+          Your email is only used to Login in Employees Dashboard.
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ------------ Sidebar (desktop) ------------ */
+function Sidebar({ current, onSelect, onLogout, user }) {
+  const tabs = ['Weekly Agenda','Attendance','Leaves','Profile'];
+  return (
+    <div className="sidebar">
+      <div>
+        <div className="logo">
+          <img
+            src="gbsl.png"  // put your logo URL or relative path
+            alt="Global Base"
+            className="logo-img"
+          />
+          <span></span>
+        </div>
+        <div className="muted">Employee Dashboard</div>
+      </div>
+      <div className="nav">
+        {tabs.map(t=>(
+          <button
+            key={t}
+            className={current===t ? 'active' : ''}
+            onClick={()=>onSelect(t)}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <div style={{marginTop:'auto', marginBottom:8}} className="small muted">
+        Signed in as <strong>{user?.name || user?.email || 'Employee'}</strong><br/>
+        <span>{user?.email}</span>
+      </div>
+      <button onClick={()=>{ try { stopAutoRefresh(); } catch(e){}; onLogout(); }} className="btn" style={{width:'100%'}}>Sign out</button>
+    </div>
+  );
+}
+
+function KPICard({label, value}) {
+  return (
+    <div className="kpi">
+      <div className="label">{label}</div>
+      <div className="value">{value}</div>
+    </div>
+  );
+}
+
+/* ------------ Attendance Page ------------ */
+function AttendancePage({ attendance, leaves }) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  const currentMonthAttendance = attendance.filter(
+    a => a.month === currentMonth && a.year === currentYear
+  );
+  const lastMonthAttendance = attendance.filter(
+    a => a.month === lastMonth && a.year === lastMonthYear
+  );
+
+  const currentMonthLeaves = leaves.filter(
+    l => l.month === currentMonth && l.year === currentYear
+  );
+
+  const currentAppliedCount = currentMonthLeaves.length;
+  const currentApprovedCount = currentMonthLeaves.filter(
+    l => (l.status || '').toLowerCase().includes('approved')
+  ).length;
+
+  const totalAppliedDays = leaves.reduce(
+    (sum,l)=>sum + (Number(l.appliedDays) || 0),
+    0
+  );
+  const totalApprovedDays = leaves.reduce(
+    (sum,l)=>sum + (Number(l.approvedDays) || 0),
+    0
+  );
+
+  const monthNames = ["January","February","March","April","May","June","July",
+    "August","September","October","November","December"];
+
+  function renderAttendanceTable(title, subtitle, rows) {
+    return (
+      <div className="card">
+        <strong>{title}</strong>
+        <p className="muted">{subtitle}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Day</th>
+              <th>Check In Time</th>
+              <th>Check Out Time</th>
+              <th>Late Hours</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r,i)=>(
+              <tr key={i}>
+                <td>{r.date}</td>
+                <td>{r.day}</td>
+                <td>{r.timeIn}</td>
+                <td>{r.timeOut}</td>
+                <td
+                  style={{
+                    color:
+                      r.lateHours === "On Time"
+                        ? "#16a34a"   // green
+                        : r.lateHours
+                        ? "#dc2626"   // red
+                        : "inherit"
+                  }}
+                >
+                  {r.lateHours}
+                </td>
+                <td>{r.status}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan="6" className="muted">No records.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="kpi-row">
+        <KPICard label="My Attendance Records" value={currentMonthAttendance.length} />
+        <KPICard label="Applied Leaves" value={totalAppliedDays} />
+        <KPICard label="Approved Leaves" value={totalApprovedDays} />
+      </div>
+
+      <div className="row" style={{marginTop:12}}>
+        <div className="col-2">
+          {renderAttendanceTable(
+            `${monthNames[currentMonth]} ${currentYear} Attendance`,
+            "This month attendance records",
+            currentMonthAttendance
+          )}
+          {renderAttendanceTable(
+            `${monthNames[lastMonth]} ${lastMonthYear} Attendance`,
+            "Last month attendance records",
+            lastMonthAttendance
+          )}
+        </div>
+
+        <div className="card summary-card">
+          <strong>Summary</strong>
+          <p className="muted">Quick view</p>
+          <div className="summary-row">
+            <span>Current month days</span>
+            <span>{currentMonthAttendance.length}</span>
+          </div>
+          <div className="summary-row">
+            <span>Last month days</span>
+            <span>{lastMonthAttendance.length}</span>
+          </div>
+          <div className="summary-row">
+            <span>Current applied leaves</span>
+            <span>{currentAppliedCount}</span>
+          </div>
+          <div className="summary-row">
+            <span>Current approved leaves</span>
+            <span>{currentApprovedCount}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------ Leaves Page ------------ */
+function LeavesPage({ leaves, leaveSummary }) {
+  const {
+    allottedCL, allottedSL,
+    usedCL, usedSL,
+    availableCL, availableSL
+  } = leaveSummary || {};
+
+  return (
+    <div>
+      <div className="card">
+        <strong>Paid Leave Calculation</strong>
+        <table>
+          <thead>
+            <tr>
+              <th>Leave</th>
+              <th>Casual Leave (CL)</th>
+              <th>Sick Leave (SL)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Allotted Leave</td>
+              <td>{allottedCL ?? 0}</td>
+              <td>{allottedSL ?? 0}</td>
+            </tr>
+            <tr>
+              <td>Used Leave</td>
+              <td>{usedCL ?? 0}</td>
+              <td>{usedSL ?? 0}</td>
+            </tr>
+            <tr>
+              <td>Available Leave</td>
+              <td>{availableCL ?? 0}</td>
+              <td>{availableSL ?? 0}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{marginTop:8, color:'#b91c1c', fontSize:13}}>
+          Note:- Each month, 0.5 days of Sick Leave and 0.5 days of Casual Leave are credited to your account.
+          Advance leave is not provided. You can save your leave days to take them together.
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <strong>My Leaves</strong>
+          <button
+            className="btn"
+            onClick={() => window.open(APPLY_LEAVE_URL, "_blank")}
+          >
+            Apply Leave
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>From</th>
+              <th>To</th>
+              <th>Applied Number of working days</th>
+              <th>Status</th>
+              <th>Approved Number of days</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leaves.map((l,i)=>(
+              <tr key={i}>
+                <td>{l.start}</td>
+                <td>{l.end}</td>
+                <td>{l.appliedDays}</td>
+                <td>{l.status}</td>
+                <td>{l.approvedDays}</td>
+              </tr>
+            ))}
+            {leaves.length === 0 && (
+              <tr>
+                <td colSpan="5" className="muted">No leave records.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ------------ Weekly Agenda Page ------------ */
+function WeeklyAgendaPage({ items }) {
+  return (
+    <div>
+      <div className="card">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <strong>Weekly Agenda</strong>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Task No</th>
+              <th>Task Details</th>
+              <th>Assigner Email Id</th>
+              <th>Assignee Email Id</th>
+              <th>Initial Target Date</th>
+              <th>Submission Type</th>
+              <th>Completion Status %</th>
+              <th>Update Remarks</th>
+              <th>Completion Date</th>
+              <th>Update Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((r,i)=>(
+              <tr key={i}>
+                <td>{r.taskNo}</td>
+                <td>{r.taskDetails}</td>
+                <td>{r.assignerEmail}</td>
+                <td>{r.assigneeEmail}</td>
+                <td>{r.initialTarget}</td>
+                <td>{r.submissionType}</td>
+                <td>{r.completionPercent}</td>
+                <td>{r.updateRemarks}</td>
+                <td>{r.completionDate}</td>
+                <td>
+                  {r.updateLink ? (
+                    <a href={r.updateLink} target="_blank" rel="noopener noreferrer">Open</a>
+                  ) : "—"}
+                </td>
+              </tr>
+            ))}
+            {items.length === 0 && (
+              <tr>
+                <td colSpan="18" className="muted">No tasks assigned.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ------------ Profile Page ------------ */
+function ProfilePage({ employee }) {
+  if(!employee) {
+    return (
+      <div className="card">
+        Employee not found in Excel. Check Employees table for your email.
+      </div>
+    );
+  }
+
+  const initials = employee.name
+    ? employee.name.split(' ').map(n=>n[0]).slice(0,2).join('')
+    : '';
+
+  return (
+    <div className="profile-layout">
+      <div className="card profile-card">
+        <div style={{display:'flex',alignItems:'center',marginBottom:16}}>
+          <div className="profile-avatar">
+            {employee.photoUrl ? (
+              <img src={employee.photoUrl} alt={employee.name} />
+            ) : (
+              <div style={{
+                width:'100%',height:'100%',display:'flex',
+                alignItems:'center',justifyContent:'center',
+                fontSize:36,fontWeight:700,color:'var(--accent)'
+              }}>
+                {initials}
+              </div>
+            )}
+          </div>
+          <div>
+            <div style={{fontSize:20,fontWeight:700}}>{employee.name}</div>
+            <div className="muted">{employee.designation || 'Employee'} &bull; {employee.department || '—'}</div>
+            <div className="small" style={{marginTop:4}}>Emp ID: {employee.id}</div>
+            {employee.awards && (
+              <div className="small">Awards: {employee.awards}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="profile-grid">
+          <div className="profile-label">DOJ</div>
+          <div>{formatDisplayDate(employee.doj)}</div>
+
+          <div className="profile-label">Email Address</div>
+          <div>{employee.email}</div>
+
+          <div className="profile-label">Contact</div>
+          <div>{employee.mobile || "—"}</div>
+
+          <div className="profile-label">Department</div>
+          <div>{employee.department || "—"}</div>
+
+          <div className="profile-label">Designation</div>
+          <div>{employee.designation || "—"}</div>
+
+          <div className="profile-label">Skills & Expertise</div>
+          <div>{employee.skills || "—"}</div>
+
+          <div className="profile-label">Country</div>
+          <div>{employee.country || "—"}</div>
+
+          <div className="profile-label">Birth date</div>
+          <div>{formatDisplayDate(employee.birthDate)}</div>
+        </div>
+      </div>
+
+      <div className="card profile-card">
+        <strong>Quick Actions</strong>
+        <div className="qa-buttons">
+          <button
+            className="btn"
+            onClick={() => window.open(MARK_ATTENDANCE_URL, "_blank")}
+          >
+            Mark Attendance
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => window.open(APPLY_LEAVE_URL, "_blank")}
+          >
+            Apply Leave
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => window.open(IT_HELP_TICKET_URL, "_blank")}
+          >
+            IT Help Ticket
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => window.open(HIRING_REQUEST_URL, "_blank")}
+          >
+            Raise Hiring Request
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => window.open(MONTHLY_FEEDBACK_URL, "_blank")}
+          >
+            GBSL Monthly Feedback
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => window.open(COMPANY_POLICIES_URL, "_blank")}
+          >
+            Company Policies
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+/* ------------ App ------------ */
+function App() {
+  const [user, setUser] = useState(null);          // { email, name }
+  const [activeTab, setActiveTab] = useState('Weekly Agenda');
+  const [employees, setEmployees] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [leaves, setLeaves] = useState([]);
+  const [weeklyAgenda, setWeeklyAgenda] = useState([]);
+  const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState("");
+  const [leaveSummary, setLeaveSummary] = useState({
+    allottedCL:0, allottedSL:0,
+    usedCL:0, usedSL:0,
+    availableCL:0, availableSL:0
+  });
+  const [currentEmployee, setCurrentEmployee] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Mobile sidebar open state (only added to enable phone menu)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  function normalize(str) {
+    return (str || '').toString().trim().toLowerCase();
+  }
+
+  // Rehydrate MSAL account on app mount so page reloads keep the user signed in
+  useEffect(() => {
+    (async () => {
+      try {
+        const acct = window.msalOneDrive && window.msalOneDrive.getAccount ? window.msalOneDrive.getAccount() : null;
+        if (acct) {
+          const email =
+            (acct.username ||
+             acct.email ||
+             (acct.idTokenClaims && acct.idTokenClaims.preferred_username) ||
+             "").toLowerCase();
+          const name = acct.name || email;
+          setUser({ email, name });
+          window.currentSignedInEmailForAutoRefresh = email;
+          // attempt to load data silently (getToken will try silent)
+          await loadLiveDataFor(email);
+          // start auto refresh (every 60s)
+          startAutoRefresh(60000);
+        } else {
+          console.debug("[auth] no stored MSAL account on mount.");
+        }
+      } catch (e) {
+        console.warn("[auth] rehydrate failed:", e);
+      }
+    })();
+  }, []);
+
+  async function handleMsSignIn() {
+    try {
+      setError('');
+      await window.msalOneDrive.loginPopup();
+      const account = window.msalOneDrive.getAccount();
+      if (!account) {
+        setError('Unable to get Microsoft account after login.');
+        return;
+      }
+      const email =
+        (account.username ||
+         account.email ||
+         (account.idTokenClaims && account.idTokenClaims.preferred_username) ||
+         '').toLowerCase();
+
+      const name = account.name || email;
+      setUser({ email, name });
+      setActiveTab('Weekly Agenda');
+
+      // expose for auto-refresh to use
+      window.currentSignedInEmailForAutoRefresh = email;
+
+      // load data for user (this uses the in-component loader)
+      await loadLiveDataFor(email);
+
+      // start auto-refresh (60s default)
+      startAutoRefresh(60000);
+
+    } catch (e) {
+      console.error(e);
+      setError('Microsoft sign-in failed. See console for details.');
     }
+  }
 
-    chartRef.current = new Chart(canvasRef.current, {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Attendance Count",
-          data
-        }]
+  async function loadLiveDataFor(userEmail) {
+    // mutex to avoid overlapping calls
+    if (window.__loadLiveDataInProgress) {
+      console.debug("loadLiveDataFor: already running, skipping concurrent call");
+      return;
+    }
+    window.__loadLiveDataInProgress = true;
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const lowerEmail = normalize(userEmail);
+      let me = null;
+
+      /* ===== 1) EMPLOYEES TABLE ===== */
+      const empRows = await window.fetchOneDriveTable("employees").catch(() => null);
+      if (empRows && empRows.length) {
+        const mappedEmps = empRows.map((r) => {
+          const id =
+            r["Employee ID"] ||
+            r.EmployeeID ||
+            r.employeeId ||
+            r["Employee Id"] ||
+            r["Emp ID"] ||
+            null;
+
+          const primaryEmail =
+            r["Microsoft Email ID"] ||
+            r["Microsoft Email"] ||
+            r.MicrosoftEmailID ||
+            null;
+
+          const altEmail =
+            r["Email address"] ||
+            r["Email Address"] ||
+            r.Email ||
+            r.email ||
+            null;
+
+          return {
+            id,
+            name: r["Emp Name"] || r.EmpName || r.Name || "",
+            email: (primaryEmail || altEmail || "").toString().trim(),
+            primaryEmail: (primaryEmail || "").toString().trim(),
+            altEmail: (altEmail || "").toString().trim(),
+            department: r["Department"] || "",
+            designation: r["Designation"] || "",
+            skills: r["Skills & Expertise"] || "",
+            country: r["Country"] || "",
+            birthDate: r["Birth date"] || "",
+            awards: r["Awards"] || "",
+            photoUrl:
+              r["Employee Photo"] ||
+              r["EmployeePhoto"] ||
+              r["Photo URL"] ||
+              r.PhotoUrl ||
+              null,
+            doj: r.DOJ || r["DOJ"] || "",
+            mobile: r.Mobile || r["Mobile"] || null
+          };
+        });
+
+        me =
+          mappedEmps.find(e => normalize(e.primaryEmail) === lowerEmail) ||
+          mappedEmps.find(e => normalize(e.altEmail) === lowerEmail) ||
+          null;
+
+        // commit employees only when fetched & mapped
+        setEmployees(mappedEmps);
+        if (me) {
+          me = { ...me, email: me.email || me.primaryEmail || me.altEmail };
+          setCurrentEmployee(me);
+        } else {
+          console.warn("No employee row matching email:", lowerEmail, "Check Employees table 'Microsoft Email ID' / 'Email address' columns.");
+        }
+      } else if (empRows === null) {
+        console.warn("Employees fetch failed; preserving previous employees state.");
+      } else {
+        setEmployees([]);
+        setCurrentEmployee(null);
       }
-    });
 
-    return () => chartRef.current?.destroy();
+      const myId = me && me.id ? normalize(me.id) : null;
+      const myName = me && me.name ? normalize(me.name) : null;
 
-  }, [attendance]);
+      /* ===== 2) ATTENDANCE TABLE ===== */
+      const attRows = await window.fetchOneDriveTable("attendance").catch(() => null);
+      if (attRows && attRows.length) {
+        let mapped = attRows.map((r) => {
+          const rawDate =
+            r["Date"] ||
+            r.Date ||
+            "";
+
+          let jsDate = null;
+          if (typeof rawDate === "number") {
+            jsDate = excelSerialToDate(rawDate);
+          } else if (rawDate) {
+            jsDate = new Date(rawDate);
+          }
+
+          const rawTimeIn =
+            r["Time_In"] ||
+            r["Check-IN Time"] ||
+            r["Check In Time"] ||
+            r.CheckINTime ||
+            "";
+
+          const rawTimeOut =
+            r["Time_Out"] ||
+            r["Check-Out Time"] ||
+            r["Check Out Time"] ||
+            r.CheckOutTime ||
+            "";
+
+          const rawLate =
+            r["Late Hours"] ||
+            r["Late Hour"] ||
+            r.LateHours ||
+            "";
+
+          const jsDay = jsDate ? jsDate.toLocaleDateString("en-GB", { weekday:"short" }) : "";
+
+          return {
+            employeeEmail:
+              r["Email ID"] ||
+              r["Email"] ||
+              r.EmailID ||
+              r.Email ||
+              "",
+            name: r["Emp Name"] || r.EmpName || "",
+            date: formatExcelDate(rawDate),
+            day: jsDay,
+            status: r["Status"] || r.Status || "",
+            timeIn: formatExcelTime(rawTimeIn),
+            timeOut: formatExcelTime(rawTimeOut),
+            lateHours: formatExcelDuration(rawLate),
+            month: jsDate ? jsDate.getMonth() : null,
+            year: jsDate ? jsDate.getFullYear() : null
+          };
+        });
+
+        if (lowerEmail) {
+          const filtered = mapped.filter((a) => normalize(a.employeeEmail) === lowerEmail);
+          if (filtered.length === 0 && attendance && attendance.length > 0) {
+            console.warn("Filtered attendance is empty but previous attendance existed; keeping previous data (possible transient).");
+          } else {
+            setAttendance(filtered);
+          }
+        } else {
+          setAttendance(mapped);
+        }
+      } else if (attRows === null) {
+        console.warn("Attendance fetch failed; preserving previous attendance state.");
+      } else {
+        setAttendance([]);
+      }
+
+      /* ===== 3) LEAVES TABLE ===== */
+      const leavesRows = await window.fetchOneDriveTable("leaves").catch(() => null);
+      if (leavesRows && leavesRows.length) {
+        let mapped = leavesRows.map((r) => {
+          const rawStart =
+            r["Start Date"] ||
+            r.StartDate ||
+            r.Start ||
+            "";
+
+          let jsStart = null;
+          if (typeof rawStart === "number") {
+            jsStart = excelSerialToDate(rawStart);
+          } else if (rawStart) {
+            jsStart = new Date(rawStart);
+          }
+
+          const appliedDays =
+            Number(
+              r["Applied Number of working days"] ||
+              r["Applied Number of days"] ||
+              r.AppliedDays ||
+              0
+            );
+
+          const approvedDays =
+            Number(
+              r["Approved Number of days"] ||
+              r["Approved Days"] ||
+              r["Paid Days"] ||
+              r.PaidDays ||
+              0
+            );
+
+          return {
+            employeeId:
+              r["Employee Id"] ||
+              r["Employee ID"] ||
+              r.EmployeeId ||
+              r.EmployeeID ||
+              null,
+            name: r["Name"] || r.Name || "",
+            start: formatExcelDate(rawStart),
+            end: formatExcelDate(
+              r["End Date"] || r.EndDate || r.End || ""
+            ),
+            type: r["Leave Type"] || r.LeaveType || "",
+            status: r["Approval Decision"] || r.ApprovalDecision || "",
+            appliedDays,
+            approvedDays,
+            month: jsStart ? jsStart.getMonth() : null,
+            year: jsStart ? jsStart.getFullYear() : null
+          };
+        });
+
+        if (myId) {
+          const filtered = mapped.filter((l) => normalize(l.employeeId) === myId);
+          if (filtered.length === 0 && leaves && leaves.length > 0) {
+            console.warn("Filtered leaves is empty but previous leaves existed; keeping previous data (possible transient).");
+          } else {
+            setLeaves(filtered);
+          }
+        } else {
+          setLeaves(mapped);
+        }
+      } else if (leavesRows === null) {
+        console.warn("Leaves fetch failed; preserving previous leaves state.");
+      } else {
+        setLeaves([]);
+      }
+
+      /* ===== 4) LEAVE CALCULATION TABLE ===== */
+      const calcRows = await window.fetchOneDriveTable("leaveCalc").catch(()=>null);
+      if (calcRows && calcRows.length) {
+        let row = null;
+        if (myId) {
+          row = calcRows.find(r =>
+            normalize(
+              r["Employee Id"] ||
+              r["Employee ID"] ||
+              r["Emp ID"] ||
+              r.EmployeeId ||
+              ""
+            ) === myId
+          );
+        }
+        if (!row && myName) {
+          row = calcRows.find(r => normalize(r["Name"] || r.Name || "") === myName);
+        }
+
+        if (row) {
+          const totalLeaves = Number(row["Total Leaves"] || row.TotalLeaves || 0);
+          const half = totalLeaves / 2;
+          const usedCL = Number(row["Casual Leave (CL)"] || row["Casual Leave"] || 0);
+          const usedSL = Number(row["Sick Leave (SL)"] || row["Sick Leave"] || 0);
+
+          setLeaveSummary({
+            allottedCL: half,
+            allottedSL: half,
+            usedCL,
+            usedSL,
+            availableCL: half - usedCL,
+            availableSL: half - usedSL
+          });
+        } else {
+          console.debug("No leaveCalc row matched current user; preserving previous leaveSummary.");
+        }
+      } else if (calcRows === null) {
+        console.warn("leaveCalc fetch failed; preserving leaveSummary.");
+      } else {
+        setLeaveSummary({
+          allottedCL:0, allottedSL:0,
+          usedCL:0, usedSL:0,
+          availableCL:0, availableSL:0
+        });
+      }
+
+      /* ===== 5) WEEKLY AGENDA TABLE ===== */
+      const agendaRows = await window.fetchOneDriveTable("weeklyAgenda").catch(()=>null);
+      if (agendaRows && agendaRows.length) {
+        let mapped = agendaRows.map(r => ({
+          taskNo: r["Task No"] || r.TaskNo || "",
+          taskDetails: r["Task Details"] || r.TaskDetails || "",
+          assignerEmail: r["Assigner Email Id"] || r.AssignerEmailId || "",
+          assigneeEmail: r["Assignee Email Id"] || r.AssigneeEmailId || "",
+          initialTarget: formatExcelDate(r["Initial Target Date"] || r.InitialTargetDate || ""),
+          submissionType: r["Submission Type"] || r.SubmissionType || "",
+          completionPercent: r["Completion Status %"] || r.CompletionStatus || "",
+          updateRemarks: r["Update Remarks"] || r.UpdateRemarks || "",
+          completionDate: formatExcelDate(r["Completion Date"] || r.CompletionDate || ""),
+          updateLink: r["Update Link"] || r.UpdateLink || ""
+        }));
+
+        if (lowerEmail) {
+          const filtered = mapped.filter(r => normalize(r.assigneeEmail) === lowerEmail);
+          if (filtered.length === 0 && weeklyAgenda && weeklyAgenda.length > 0) {
+            console.warn("Filtered weeklyAgenda is empty but previous weeklyAgenda existed; keeping previous data (possible transient).");
+          } else {
+            setWeeklyAgenda(filtered);
+          }
+        } else {
+          setWeeklyAgenda(mapped);
+        }
+      } else if (agendaRows === null) {
+        console.warn("weeklyAgenda fetch failed; preserving previous weeklyAgenda.");
+      } else {
+        setWeeklyAgenda([]);
+      }
+
+    } catch (err) {
+      console.error("Live data load failed", err);
+      setError("Error loading data from Excel. Check console for details.");
+    } finally {
+      setLoading(false);
+      window.__loadLiveDataInProgress = false;
+    }
+  }
+
+  // expose to auto-refresh world:
+  window.loadLiveDataFor = loadLiveDataFor;
+
+  // NEW: robust logout which calls MSAL logout and clears local app state
+  async function handleLogout() {
+    try {
+      // stop auto-refresh first
+      try { stopAutoRefresh(); } catch(e) { /* ignore */ }
+
+      // get current MSAL account (may be null)
+      const acct = window.msalOneDrive && window.msalOneDrive.getAccount ? window.msalOneDrive.getAccount() : null;
+
+      // Clear app state locally (React)
+      setUser(null);
+      setCurrentEmployee(null);
+      setEmployees([]); setAttendance([]); setLeaves([]); setWeeklyAgenda([]);
+      setActiveTab('Attendance');
+
+      // Clear any helper pointer used by auto-refresh
+      window.currentSignedInEmailForAutoRefresh = null;
+
+      // If there's an MSAL account, call logout to clear MSAL cache / tokens.
+      if (acct) {
+        try {
+          // Try popup logout (better UX) — some browsers block popups
+          await msalInstance.logoutPopup({ account: acct, mainWindowRedirectUri: REDIRECT_URI });
+        } catch (popupErr) {
+          console.warn("logoutPopup failed or blocked, falling back to redirect logout:", popupErr);
+          // fallback to redirect logout (this will navigate away and return to redirectUri)
+          try {
+            msalInstance.logoutRedirect({ account: acct, postLogoutRedirectUri: REDIRECT_URI });
+            // Note: logoutRedirect will redirect away; the following lines may not run.
+          } catch (redirectErr) {
+            console.error("logoutRedirect also failed:", redirectErr);
+          }
+        }
+      } else {
+        // No MSAL account present — still ensure localStorage items that MSAL uses are cleared
+        try {
+          Object.keys(localStorage).forEach(k => {
+            if (k && k.indexOf("msal") === 0) localStorage.removeItem(k);
+          });
+        } catch (e) { /* ignore */ }
+      }
+    } catch (err) {
+      console.error("Error during logout:", err);
+      // ensure local UI cleared even if logout call failed
+      setUser(null);
+      setCurrentEmployee(null);
+      setEmployees([]); setAttendance([]); setLeaves([]); setWeeklyAgenda([]);
+      setActiveTab('Attendance');
+      window.currentSignedInEmailForAutoRefresh = null;
+      try { stopAutoRefresh(); } catch(e){ }
+    }
+  }
+
+  if (!user) {
+    return <LoginPage onSignIn={handleMsSignIn} error={error} />;
+  }
+
+  const employee = currentEmployee || (employees.length ? employees[0] : null);
+const filteredAttendance = selectedEmployeeEmail
+  ? attendance.filter(a => normalize(a.employeeEmail) === normalize(selectedEmployeeEmail))
+  : attendance;
+
+const selectedEmp = employees.find(e => e.email === selectedEmployeeEmail);
+
+const filteredLeaves = selectedEmp
+  ? leaves.filter(l => normalize(l.employeeId) === normalize(selectedEmp.id))
+  : leaves;
+
+const filteredAgenda = selectedEmployeeEmail
+  ? weeklyAgenda.filter(a => normalize(a.assigneeEmail) === normalize(selectedEmployeeEmail))
+  : weeklyAgenda;
 
   return (
-    <div className="card">
-      <strong>Attendance Trend</strong>
-      <canvas ref={canvasRef}></canvas>
+    <div className="app">
+      {/* Desktop sidebar */}
+      <Sidebar current={activeTab} onSelect={setActiveTab} onLogout={handleLogout} user={user} />
+
+      {/* Mobile overlay sidebar (only shown on small screens) */}
+      <div className={`mobile-sidebar-backdrop ${mobileSidebarOpen ? 'open' : ''}`} onClick={()=>setMobileSidebarOpen(false)} />
+      <aside className={`mobile-sidebar ${mobileSidebarOpen ? 'open' : ''}`} aria-hidden={!mobileSidebarOpen}>
+        <div style={{display:'flex', justifyContent:'flex-end'}}>
+          <button onClick={()=>setMobileSidebarOpen(false)} style={{background:'transparent', border:'none', cursor:'pointer', fontSize:20}}>✕</button>
+        </div>
+
+        <div>
+          <div className="logo">
+            <img src="gbsl.png" alt="Global Base" className="logo-img" />
+            <span></span>
+          </div>
+          <div className="muted">Employee Dashboard</div>
+        </div>
+
+        <div className="nav" style={{marginTop:12}}>
+          {['Weekly Agenda','Attendance','Leaves','Profile'].map(t=>(
+            <button key={t} className={activeTab===t ? 'active' : ''} onClick={() => { setActiveTab(t); setMobileSidebarOpen(false); }}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div style={{marginTop:'auto', marginBottom:8}} className="small muted">
+          Signed in as <strong>{user?.name || user?.email || 'Employee'}</strong><br/>
+          <span>{user?.email}</span>
+        </div>
+        <button onClick={() => { try { stopAutoRefresh(); } catch(e){}; setMobileSidebarOpen(false); handleLogout(); }} className="btn" style={{width:'100%'}}>Sign out</button>
+      </aside>
+
+      <div className="main">
+        <div className="header">
+          <div style={{display:'flex', alignItems:'center', gap:12}}>
+            {/* Hamburger only visible on mobile via CSS */}
+            <button className="hamburger" onClick={()=>setMobileSidebarOpen(true)} aria-label="Open menu">
+              <span className="bar" />
+            </button>
+
+            <div>
+              <div style={{fontSize:22,fontWeight:700}}>Global Base — Employee Dashboard</div>
+              <div className="muted">Data for <strong>{user.email}</strong></div>
+            </div>
+          </div>
+          <div style={{display:'flex', gap:12, alignItems:'center'}}>
+
+  <select
+    className="search"
+    value={selectedEmployeeEmail}
+    onChange={(e)=>setSelectedEmployeeEmail(e.target.value)}
+  >
+    <option value="">All Employees</option>
+    {employees.map(emp => (
+      <option key={emp.email} value={emp.email}>
+        {emp.name} ({emp.id})
+      </option>
+    ))}
+  </select>
+
+  {loading && <div className="small muted">Refreshing data…</div>}
+
+</div>
+
+        </div>
+
+        {activeTab === 'Attendance' && (
+          <AttendancePage attendance={filteredAttendance} leaves={filteredLeaves} />
+
+        )}
+        {activeTab === 'Leaves' && (
+          <LeavesPage leaves={filteredLeaves} leaveSummary={leaveSummary} />
+
+        )}
+        {activeTab === 'Weekly Agenda' && (
+          <WeeklyAgendaPage items={filteredAgenda} />
+
+        )}
+        {activeTab === 'Profile' && (
+          <ProfilePage employee={employee} />
+        )}
+
+        <footer>
+          <div className="muted">
+            Global Base — Employee Dashboard Created by GBSL IT.
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
-function LeaveChart({ leaves }) {
-  const canvasRef = React.useRef(null);
-  const chartRef = React.useRef(null);
 
-  useEffect(() => {
-    if (!leaves.length) return;
-
-    let cl = 0, sl = 0;
-    leaves.forEach(l => {
-      if ((l.type || "").includes("Casual")) cl += l.appliedDays;
-      if ((l.type || "").includes("Sick")) sl += l.appliedDays;
-    });
-
-    if (chartRef.current) chartRef.current.destroy();
-
-    chartRef.current = new Chart(canvasRef.current, {
-      type: "pie",
-      data: {
-        labels: ["Casual Leave","Sick Leave"],
-        datasets: [{ data: [cl, sl] }]
-      }
-    });
-
-    return () => chartRef.current?.destroy();
-
-  }, [leaves]);
-
-  return (
-    <div className="card">
-      <strong>Leave Distribution</strong>
-      <canvas ref={canvasRef}></canvas>
-    </div>
-  );
-}
-function TaskChart({ agenda }) {
-  const canvasRef = React.useRef(null);
-  const chartRef = React.useRef(null);
-
-  useEffect(() => {
-    if (!agenda.length) return;
-
-    let complete = 0, pending = 0;
-    agenda.forEach(t => {
-      if (Number(t.completionPercent) >= 100) complete++;
-      else pending++;
-    });
-
-    if (chartRef.current) chartRef.current.destroy();
-
-    chartRef.current = new Chart(canvasRef.current, {
-      type: "doughnut",
-      data: {
-        labels: ["Completed","Pending"],
-        datasets: [{ data: [complete, pending] }]
-      }
-    });
-
-    return () => chartRef.current?.destroy();
-
-  }, [agenda]);
-
-  return (
-    <div className="card">
-      <strong>Task Completion</strong>
-      <canvas ref={canvasRef}></canvas>
-    </div>
-  );
-}
-
-
-
-/* ================= DASHBOARD ================= */
-
-function HRDashboard({employees,attendance,leaves,agenda}){
-return(
-<>
-<HRKPIs employees={employees} attendance={attendance} leaves={leaves} agenda={agenda}/>
-<div className="row">
-<AttendanceChart attendance={attendance}/>
-<LeaveChart leaves={leaves}/>
-<TaskChart agenda={agenda}/>
-</div>
-</>)
-}
-
-/* ================= MAIN APP ================= */
-
-function App(){
-
-const [employees,setEmployees]=useState([])
-const [attendance,setAttendance]=useState([])
-const [leaves,setLeaves]=useState([])
-const [agenda,setAgenda]=useState([])
-const [selected,setSelected]=useState("")
-
-useEffect(()=>{loadData()},[])
-
-async function loadData(){
-
-// TODO: Replace with your fetchOneDriveTable calls
-// For demo using mock data
-
-setEmployees([{email:"a@a.com",name:"John"},{email:"b@b.com",name:"Sara"}])
-
-setAttendance([
-{employeeEmail:"a@a.com",date:new Date().toLocaleDateString("en-GB"),status:"Present",lateHours:"00:10:00",month:1,year:2024}
-])
-
-setLeaves([{employeeId:"1",type:"Casual",appliedDays:2,status:"Approved"}])
-
-setAgenda([{completionPercent:50}])
-}
-
-/* FILTER */
-
-const emp=employees.find(e=>e.email===selected)
-
-const fAttendance=selected?attendance.filter(a=>a.employeeEmail===selected):attendance
-const fLeaves=selected?leaves:leaves
-const fAgenda=selected?agenda:agenda
-
-return(
-<div className="app">
-
-<div className="sidebar">
-<h2>HR Dashboard</h2>
-
-<select className="search" value={selected} onChange={e=>setSelected(e.target.value)}>
-<option value="">All Employees</option>
-{employees.map(e => (
-  <option key={e.email} value={e.email}>
-    {e.name}
-  </option>
-))}
-
-</select>
-
-</div>
-
-<div className="main">
-<HRDashboard employees={employees} attendance={fAttendance} leaves={fLeaves} agenda={fAgenda}/>
-</div>
-
-</div>)
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>)
+/* Render */
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 
 </body>
 </html>
-
