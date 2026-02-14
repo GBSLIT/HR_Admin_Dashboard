@@ -1054,6 +1054,7 @@ function App() {
   const [leaves, setLeaves] = useState([]);
   const [weeklyAgenda, setWeeklyAgenda] = useState([]);
   const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState("");
+  const [leaveCalcData, setLeaveCalcData] = useState([]);
   const [leaveSummary, setLeaveSummary] = useState({
     allottedCL:0, allottedSL:0,
     usedCL:0, usedSL:0,
@@ -1345,37 +1346,14 @@ function App() {
 
       /* ===== 4) LEAVE CALCULATION TABLE ===== */
       const calcRows = await window.fetchOneDriveTable("leaveCalc").catch(()=>null);
+      if (calcRows) setLeaveCalcData(calcRows);
       if (calcRows && calcRows.length) {
-        let row = null;
-        if (myId) {
-          row = calcRows.find(r =>
-            normalize(
-              r["Employee Id"] ||
-              r["Employee ID"] ||
-              r["Emp ID"] ||
-              r.EmployeeId ||
-              ""
-            ) === myId
-          );
-        }
-        if (!row && myName) {
-          row = calcRows.find(r => normalize(r["Name"] || r.Name || "") === myName);
-        }
+       setLeaveSummary({
+  allottedCL:0, allottedSL:0,
+  usedCL:0, usedSL:0,
+  availableCL:0, availableSL:0
+});
 
-        if (row) {
-          const totalLeaves = Number(row["Total Leaves"] || row.TotalLeaves || 0);
-          const half = totalLeaves / 2;
-          const usedCL = Number(row["Casual Leave (CL)"] || row["Casual Leave"] || 0);
-          const usedSL = Number(row["Sick Leave (SL)"] || row["Sick Leave"] || 0);
-
-          setLeaveSummary({
-            allottedCL: half,
-            allottedSL: half,
-            usedCL,
-            usedSL,
-            availableCL: half - usedCL,
-            availableSL: half - usedSL
-          });
         } else {
           console.debug("No leaveCalc row matched current user; preserving previous leaveSummary.");
         }
@@ -1496,6 +1474,33 @@ const filteredLeaves = selectedEmp
 const filteredAgenda = selectedEmployeeEmail
   ? weeklyAgenda.filter(a => normalize(a.assigneeEmail) === normalize(selectedEmployeeEmail))
   : weeklyAgenda;
+let filteredLeaveSummary = leaveSummary;
+
+if (selectedEmployeeEmail) {
+  const emp = employees.find(e => e.email === selectedEmployeeEmail);
+
+  if (emp) {
+    const row = leaveCalcData.find(r =>
+      normalize(r["Employee Id"] || r["Employee ID"]) === normalize(emp.id)
+    );
+
+    if (row) {
+      const totalLeaves = Number(row["Total Leaves"] || 0);
+      const half = totalLeaves / 2;
+      const usedCL = Number(row["Casual Leave (CL)"] || 0);
+      const usedSL = Number(row["Sick Leave (SL)"] || 0);
+
+      filteredLeaveSummary = {
+        allottedCL: half,
+        allottedSL: half,
+        usedCL,
+        usedSL,
+        availableCL: half - usedCL,
+        availableSL: half - usedSL
+      };
+    }
+  }
+}
 
   return (
     <div className="app">
@@ -1566,7 +1571,8 @@ const filteredAgenda = selectedEmployeeEmail
 
         )}
         {activeTab === 'Leaves' && (
-          <LeavesPage leaves={filteredLeaves} leaveSummary={leaveSummary} />
+          <LeavesPage leaves={filteredLeaves} leaveSummary={filteredLeaveSummary} />
+
 
         )}
         {activeTab === 'Weekly Agenda' && (
@@ -1593,6 +1599,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
