@@ -1255,17 +1255,7 @@ function App() {
             year: jsDate ? jsDate.getFullYear() : null
           };
         });
-
-        if (lowerEmail) {
-          const filtered = mapped.filter((a) => normalize(a.employeeEmail) === lowerEmail);
-          if (filtered.length === 0 && attendance && attendance.length > 0) {
-            console.warn("Filtered attendance is empty but previous attendance existed; keeping previous data (possible transient).");
-          } else {
-            setAttendance(filtered);
-          }
-        } else {
-          setAttendance(mapped);
-        }
+        setAttendance(mapped);        
       } else if (attRows === null) {
         console.warn("Attendance fetch failed; preserving previous attendance state.");
       } else {
@@ -1327,16 +1317,8 @@ function App() {
           };
         });
 
-        if (myId) {
-          const filtered = mapped.filter((l) => normalize(l.employeeId) === myId);
-          if (filtered.length === 0 && leaves && leaves.length > 0) {
-            console.warn("Filtered leaves is empty but previous leaves existed; keeping previous data (possible transient).");
-          } else {
-            setLeaves(filtered);
-          }
-        } else {
-          setLeaves(mapped);
-        }
+       setLeaves(mapped);
+
       } else if (leavesRows === null) {
         console.warn("Leaves fetch failed; preserving previous leaves state.");
       } else {
@@ -1405,16 +1387,8 @@ function App() {
           updateLink: r["Update Link"] || r.UpdateLink || ""
         }));
 
-        if (lowerEmail) {
-          const filtered = mapped.filter(r => normalize(r.assigneeEmail) === lowerEmail);
-          if (filtered.length === 0 && weeklyAgenda && weeklyAgenda.length > 0) {
-            console.warn("Filtered weeklyAgenda is empty but previous weeklyAgenda existed; keeping previous data (possible transient).");
-          } else {
-            setWeeklyAgenda(filtered);
-          }
-        } else {
-          setWeeklyAgenda(mapped);
-        }
+        setWeeklyAgenda(mapped);
+
       } else if (agendaRows === null) {
         console.warn("weeklyAgenda fetch failed; preserving previous weeklyAgenda.");
       } else {
@@ -1606,3 +1580,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
