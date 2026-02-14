@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>HR Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<script src="https://alcdn.msauth.net/browser/2.37.0/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{font-family:Inter;background:#f6f8fb;margin:0}
+.app{display:flex}
+.sidebar{width:220px;background:#fff;padding:20px;height:100vh}
+.main{flex:1;padding:28px}
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap}
+.kpi{background:#fff;padding:16px;border-radius:12px;min-width:200px}
+.card{background:#fff;padding:16px;border-radius:12px;margin-top:16px}
+.row{display:flex;gap:16px}
+.search{padding:8px;border-radius:8px}
+</style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+
+const {useState,useEffect,useRef}=React;
+
+/* ================= KPI CARD ================= */
+
+function KPICard({label,value}){
+return <div className="kpi"><div>{label}</div><h2>{value}</h2></div>
+}
+
+/* ================= KPI SECTION ================= */
+
+function HRKPIs({employees,attendance,leaves,agenda}){
+
+const today=new Date().toLocaleDateString("en-GB")
+
+const present=attendance.filter(a=>a.date===today && a.status==="Present").length
+const late=attendance.filter(a=>a.lateHours && a.lateHours!=="00:00:00").length
+const leaveCount=leaves.filter(l=>l.status.includes("Approved")).length
+const pending=agenda.filter(t=>Number(t.completionPercent)<100).length
+
+return(
+<div className="kpi-row">
+<KPICard label="Employees" value={employees.length}/>
+<KPICard label="Present Today" value={present}/>
+<KPICard label="Late Today" value={late}/>
+<KPICard label="On Leave" value={leaveCount}/>
+<KPICard label="Pending Tasks" value={pending}/>
+</div>)
+}
+
+/* ================= CHARTS ================= */
+
+function AttendanceChart({attendance}){
+const ref=useRef()
+
+useEffect(()=>{
+const map={}
+attendance.forEach(a=>{
+const key=a.month+"-"+a.year
+map[key]=(map[key]||0)+1
+})
+
+new Chart(ref.current,{
+type:"line",
+data:{labels:Object.keys(map),datasets:[{label:"Attendance",data:Object.values(map)}]}
+})
+},[attendance])
+
+return <div className="card"><h3>Attendance Trend</h3><canvas ref={ref}></canvas></div>
+}
+
+function LeaveChart({leaves}){
+const ref=useRef()
+
+useEffect(()=>{
+let cl=0,sl=0
+leaves.forEach(l=>{
+if(l.type.includes("Casual"))cl+=l.appliedDays
+if(l.type.includes("Sick"))sl+=l.appliedDays
+})
+
+new Chart(ref.current,{
+type:"pie",
+data:{labels:["CL","SL"],datasets:[{data:[cl,sl]}]}
+})
+},[leaves])
+
+return <div className="card"><h3>Leave Distribution</h3><canvas ref={ref}></canvas></div>
+}
+
+function TaskChart({agenda}){
+const ref=useRef()
+
+useEffect(()=>{
+let done=0,pending=0
+agenda.forEach(t=>{
+if(Number(t.completionPercent)>=100)done++
+else pending++
+})
+
+new Chart(ref.current,{
+type:"doughnut",
+data:{labels:["Done","Pending"],datasets:[{data:[done,pending]}]}
+})
+},[agenda])
+
+return <div className="card"><h3>Task Status</h3><canvas ref={ref}></canvas></div>
+}
+
+/* ================= DASHBOARD ================= */
+
+function HRDashboard({employees,attendance,leaves,agenda}){
+return(
+<>
+<HRKPIs employees={employees} attendance={attendance} leaves={leaves} agenda={agenda}/>
+<div className="row">
+<AttendanceChart attendance={attendance}/>
+<LeaveChart leaves={leaves}/>
+<TaskChart agenda={agenda}/>
+</div>
+</>)
+}
+
+/* ================= MAIN APP ================= */
+
+function App(){
+
+const [employees,setEmployees]=useState([])
+const [attendance,setAttendance]=useState([])
+const [leaves,setLeaves]=useState([])
+const [agenda,setAgenda]=useState([])
+const [selected,setSelected]=useState("")
+
+useEffect(()=>{loadData()},[])
+
+async function loadData(){
+
+// TODO: Replace with your fetchOneDriveTable calls
+// For demo using mock data
+
+setEmployees([{email:"a@a.com",name:"John"},{email:"b@b.com",name:"Sara"}])
+
+setAttendance([
+{employeeEmail:"a@a.com",date:new Date().toLocaleDateString("en-GB"),status:"Present",lateHours:"00:10:00",month:1,year:2024}
+])
+
+setLeaves([{employeeId:"1",type:"Casual",appliedDays:2,status:"Approved"}])
+
+setAgenda([{completionPercent:50}])
+}
+
+/* FILTER */
+
+const emp=employees.find(e=>e.email===selected)
+
+const fAttendance=selected?attendance.filter(a=>a.employeeEmail===selected):attendance
+const fLeaves=selected?leaves:leaves
+const fAgenda=selected?agenda:agenda
+
+return(
+<div className="app">
+
+<div className="sidebar">
+<h2>HR Dashboard</h2>
+
+<select className="search" value={selected} onChange={e=>setSelected(e.target.value)}>
+<option value="">All Employees</option>
+{employees.map(e=><option value={e.email}>{e.name}</option>)}
+</select>
+
+</div>
+
+<div className="main">
+<HRDashboard employees={employees} attendance={fAttendance} leaves={fLeaves} agenda={fAgenda}/>
+</div>
+
+</div>)
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>)
+</script>
+
+</body>
+</html>
