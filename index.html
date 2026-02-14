@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Employee Dashboard - Global</title>
+  <title>HR & Admin Dashboard - Global</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <!-- MSAL (global) -->
@@ -561,7 +561,7 @@ function LoginPage({ onSignIn, error }) {
     <div className="login-wrap">
       <div className="login-card">
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
-          <div style={{fontSize:20,fontWeight:700}}>Employee Dashboard</div>
+          <div style={{fontSize:20,fontWeight:700}}>HR & Admin Dashboard</div>
           <div style={{color:'var(--muted)',fontSize:13}}>Sign in with Microsoft 365</div>
         </div>
 
@@ -604,7 +604,7 @@ function Sidebar({ current, onSelect, onLogout, user, employees, selectedEmploye
           />
           <span></span>
         </div>
-        <div className="muted">Employee Dashboard</div>
+        <div className="muted">HR & Admin Dashboard</div>
       </div>
       <div className="nav">
         {tabs.map(t=>(
@@ -1523,7 +1523,7 @@ const filteredAgenda = selectedEmployeeEmail
             <img src="gbsl.png" alt="Global Base" className="logo-img" />
             <span></span>
           </div>
-          <div className="muted">Employee Dashboard</div>
+          <div className="muted">HR & Admin Dashboard</div>
         </div>
 
         <div className="nav" style={{marginTop:12}}>
@@ -1593,6 +1593,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
