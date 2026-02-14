@@ -591,7 +591,7 @@ function LoginPage({ onSignIn, error }) {
 }
 
 /* ------------ Sidebar (desktop) ------------ */
-function Sidebar({ current, onSelect, onLogout, user }) {
+function Sidebar({ current, onSelect, onLogout, user, employees, selectedEmployeeEmail, setSelectedEmployeeEmail }) {
   const tabs = ['Weekly Agenda','Attendance','Leaves','Profile'];
   return (
     <div className="sidebar">
@@ -617,6 +617,24 @@ function Sidebar({ current, onSelect, onLogout, user }) {
           </button>
         ))}
       </div>
+      <div style={{marginTop:16}}>
+  <div className="small muted" style={{marginBottom:6}}>Filter Employee</div>
+
+  <select
+    className="search"
+    style={{width:'100%'}}
+    value={selectedEmployeeEmail}
+    onChange={(e)=>setSelectedEmployeeEmail(e.target.value)}
+  >
+    <option value="">All Employees</option>
+    {employees.map(emp => (
+      <option key={emp.email} value={emp.email}>
+        {emp.name}
+      </option>
+    ))}
+  </select>
+</div>
+
       <div style={{marginTop:'auto', marginBottom:8}} className="small muted">
         Signed in as <strong>{user?.name || user?.email || 'Employee'}</strong><br/>
         <span>{user?.email}</span>
@@ -1482,7 +1500,16 @@ const filteredAgenda = selectedEmployeeEmail
   return (
     <div className="app">
       {/* Desktop sidebar */}
-      <Sidebar current={activeTab} onSelect={setActiveTab} onLogout={handleLogout} user={user} />
+      <Sidebar
+  current={activeTab}
+  onSelect={setActiveTab}
+  onLogout={handleLogout}
+  user={user}
+  employees={employees}
+  selectedEmployeeEmail={selectedEmployeeEmail}
+  setSelectedEmployeeEmail={setSelectedEmployeeEmail}
+/>
+
 
       {/* Mobile overlay sidebar (only shown on small screens) */}
       <div className={`mobile-sidebar-backdrop ${mobileSidebarOpen ? 'open' : ''}`} onClick={()=>setMobileSidebarOpen(false)} />
@@ -1527,24 +1554,10 @@ const filteredAgenda = selectedEmployeeEmail
               <div className="muted">Data for <strong>{user.email}</strong></div>
             </div>
           </div>
-          <div style={{display:'flex', gap:12, alignItems:'center'}}>
-
-  <select
-    className="search"
-    value={selectedEmployeeEmail}
-    onChange={(e)=>setSelectedEmployeeEmail(e.target.value)}
-  >
-    <option value="">All Employees</option>
-    {employees.map(emp => (
-      <option key={emp.email} value={emp.email}>
-        {emp.name} ({emp.id})
-      </option>
-    ))}
-  </select>
-
+  <div style={{display:'flex', gap:12, alignItems:'center'}}>
   {loading && <div className="small muted">Refreshing data…</div>}
-
 </div>
+
 
         </div>
 
@@ -1580,4 +1593,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
