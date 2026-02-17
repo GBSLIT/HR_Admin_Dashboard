@@ -788,6 +788,19 @@ function AttendancePage({ attendance, leaves }) {
 
 /* ------------ Leaves Page ------------ */
 function LeavesPage({ leaves, leaveSummary }) {
+  const [statusFilter, setStatusFilter] = React.useState("All");
+    const filteredLeavesList = leaves.filter(l => {
+    const status = (l.status || "").toLowerCase();
+
+    if (statusFilter === "Pending")
+      return status === "" || status === "pending";
+
+    if (statusFilter === "Approved")
+      return status.includes("approved");
+
+    return true;
+  });
+
   const {
     allottedCL, allottedSL,
     usedCL, usedSL,
@@ -832,32 +845,57 @@ function LeavesPage({ leaves, leaveSummary }) {
 
       <div className="card">
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <strong>My Leaves</strong>
-          <button
-            className="btn"
-            onClick={() => window.open(APPLY_LEAVE_URL, "_blank")}
-          >
-            Apply Leave
-          </button>
-        </div>
+  <strong>My Leaves</strong>
+
+  <div style={{display:'flex', gap:10}}>
+    <select
+      className="search"
+      style={{width:140}}
+      value={statusFilter}
+      onChange={(e)=>setStatusFilter(e.target.value)}
+    >
+      <option value="All">All</option>
+      <option value="Pending">Pending</option>
+      <option value="Approved">Approved</option>
+    </select>
+
+    <button
+      className="btn"
+      onClick={() => window.open(APPLY_LEAVE_URL, "_blank")}
+    >
+      Apply Leave
+    </button>
+  </div>
+</div>
+
         <table>
           <thead>
             <tr>
               <th>From</th>
-              <th>To</th>
-              <th>Applied Number of working days</th>
-              <th>Status</th>
-              <th>Approved Number of days</th>
+<th>To</th>
+<th>Leave Type</th>
+<th>Applied Number of working days</th>
+<th>Status</th>
+<th>Approved Number of days</th>
+<th>Approval Link</th>
+
             </tr>
           </thead>
           <tbody>
-            {leaves.map((l,i)=>(
+            {filteredLeavesList.map((l,i)=>(
               <tr key={i}>
-                <td>{l.start}</td>
-                <td>{l.end}</td>
-                <td>{l.appliedDays}</td>
-                <td>{l.status}</td>
-                <td>{l.approvedDays}</td>
+               <td>{l.start}</td>
+<td>{l.end}</td>
+<td>{l.type}</td>
+<td>{l.appliedDays}</td>
+<td>{l.status || "Pending"}</td>
+<td>{l.approvedDays}</td>
+<td>
+  {l.approvalLink ? (
+    <a href={l.approvalLink} target="_blank">Open</a>
+  ) : "—"}
+</td>
+
               </tr>
             ))}
             {leaves.length === 0 && (
@@ -1329,6 +1367,7 @@ function App() {
             ),
             type: r["Leave Type"] || r.LeaveType || "",
             status: r["Approval Decision"] || r.ApprovalDecision || "",
+            approvalLink: r["Approval Link"] || r.ApprovalLink || "",
             appliedDays,
             approvedDays,
             month: jsStart ? jsStart.getMonth() : null,
@@ -1601,6 +1640,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
