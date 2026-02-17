@@ -654,27 +654,40 @@ function KPICard({label, value}) {
   );
 }
   /* ================= DASHBOARD KPI ================= */
-function HRKPIs({ employees, attendance, leaves, agenda }) {
+function HRKPIs({ employees, attendance, leaves }) {
+
   const today = new Date().toLocaleDateString("en-GB");
 
-  const present = attendance.filter(a => a.date === today && a.status === "Present").length;
+  const present = attendance.filter(a =>
+    a.date === today && a.status === "Take Marked in"
+  ).length;
 
-  const late = attendance.filter(a => a.lateHours && a.lateHours !== "00:00:00").length;
+  const absent = attendance.filter(a =>
+    a.date === today && a.status === "Take not marked in"
+  ).length;
 
-  const onLeave = leaves.filter(l => (l.status || "").toLowerCase().includes("approved")).length;
+  const late = attendance.filter(a => {
+    if (a.date !== today) return false;
+    if (!a.timeIn) return false;
+    return a.timeIn > "10:05";
+  }).length;
 
-  const pendingTasks = agenda.filter(t => Number(t.completionPercent) < 100).length;
+  const onLeave = leaves.filter(l =>
+    (l.status || "").toLowerCase().includes("approved") &&
+    l.start === today
+  ).length;
 
   return (
     <div className="kpi-row">
       <KPICard label="Total Employees" value={employees.length} />
       <KPICard label="Present Today" value={present} />
+      <KPICard label="Absent Today" value={absent} />
+      <KPICard label="On Leave Today" value={onLeave} />
       <KPICard label="Late Today" value={late} />
-      <KPICard label="On Leave" value={onLeave} />
-      <KPICard label="Pending Tasks" value={pendingTasks} />
     </div>
   );
 }
+
 
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
@@ -774,6 +787,98 @@ function TaskChart({ agenda }) {
 
   return <canvas ref={ref} height="120"></canvas>;
 }
+function HRLists({ employees, attendance }) {
+
+  const today = new Date().toLocaleDateString("en-GB");
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+
+  // Helper to get employee info
+  const getEmp = email => employees.find(e => e.email === email);
+
+  /* ABSENT TODAY */
+  const absentToday = attendance.filter(a =>
+    a.date === today && a.status === "Take not marked in"
+  );
+
+  /* LATE TODAY */
+  const lateToday = attendance.filter(a =>
+    a.date === today && a.timeIn && a.timeIn > "10:05"
+  );
+
+  /* MOST LATE THIS MONTH */
+  const lateMap = {};
+  attendance.forEach(a => {
+    if (a.month === month && a.year === year && a.timeIn > "10:05") {
+      lateMap[a.employeeEmail] = (lateMap[a.employeeEmail] || 0) + 1;
+    }
+  });
+
+  const mostLate = Object.entries(lateMap)
+    .map(([email,count]) => ({ email, count }))
+    .sort((a,b) => b.count - a.count);
+
+  return (
+    <div className="row">
+
+      {/* ABSENT */}
+      <div className="card" style={{flex:1}}>
+        <strong>Absent Today</strong>
+        <table>
+          <tbody>
+            {absentToday.map((a,i) => {
+              const emp = getEmp(a.employeeEmail);
+              return (
+                <tr key={i}>
+                  <td>{emp?.name || a.employeeEmail}</td>
+                  <td>{emp?.department || "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* LATE */}
+      <div className="card" style={{flex:1}}>
+        <strong>Late Today</strong>
+        <table>
+          <tbody>
+            {lateToday.map((a,i) => {
+              const emp = getEmp(a.employeeEmail);
+              return (
+                <tr key={i}>
+                  <td>{emp?.name}</td>
+                  <td>{a.timeIn}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* MOST LATE */}
+      <div className="card" style={{flex:1}}>
+        <strong>Most Late This Month</strong>
+        <table>
+          <tbody>
+            {mostLate.map((r,i) => {
+              const emp = getEmp(r.email);
+              return (
+                <tr key={i}>
+                  <td>{emp?.name}</td>
+                  <td>{r.count}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  );
+}
 
 /* ================= MAIN DASHBOARD ================= */
 function HRDashboard({ employees, attendance, leaves, agenda }) {
@@ -783,7 +888,6 @@ function HRDashboard({ employees, attendance, leaves, agenda }) {
         employees={employees}
         attendance={attendance}
         leaves={leaves}
-        agenda={agenda}
       />
 
       <div className="row">
@@ -802,9 +906,12 @@ function HRDashboard({ employees, attendance, leaves, agenda }) {
           <TaskChart agenda={agenda} />
         </div>
       </div>
+
+      <HRLists employees={employees} attendance={attendance} />
     </>
   );
 }
+
 
 
 /* ------------ Attendance Page ------------ */
@@ -1798,6 +1905,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
