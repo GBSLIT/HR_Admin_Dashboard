@@ -789,17 +789,20 @@ function AttendancePage({ attendance, leaves }) {
 /* ------------ Leaves Page ------------ */
 function LeavesPage({ leaves, leaveSummary }) {
   const [statusFilter, setStatusFilter] = React.useState("All");
-    const filteredLeavesList = leaves.filter(l => {
-    const status = (l.status || "").toLowerCase();
+  const filteredLeavesList = leaves.filter(l => {
+  // 🔴 Ignore blank rows from Excel
+  if (!l.start && !l.employeeId) return false;
 
-    if (statusFilter === "Pending")
-      return status === "" || status === "pending";
+  const status = (l.status || "").toLowerCase();
 
-    if (statusFilter === "Approved")
-      return status.includes("approved");
+  if (statusFilter === "Pending")
+    return status === "" || status === "pending";
 
-    return true;
-  });
+  if (statusFilter === "Approved")
+    return status.includes("approved");
+
+  return true;
+});
 
   const {
     allottedCL, allottedSL,
@@ -1640,6 +1643,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
