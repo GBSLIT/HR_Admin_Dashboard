@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta charset="utf-8" />
   <title>HR & Admin Dashboard - Global</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -592,7 +593,7 @@ function LoginPage({ onSignIn, error }) {
 
 /* ------------ Sidebar (desktop) ------------ */
 function Sidebar({ current, onSelect, onLogout, user, employees, selectedEmployeeEmail, setSelectedEmployeeEmail }) {
-  const tabs = ['Weekly Agenda','Attendance','Leaves','Profile'];
+  const tabs = ['Dashboard','Weekly Agenda','Attendance','Leaves','Profile'];
   return (
     <div className="sidebar">
       <div>
@@ -652,6 +653,159 @@ function KPICard({label, value}) {
     </div>
   );
 }
+  /* ================= DASHBOARD KPI ================= */
+function HRKPIs({ employees, attendance, leaves, agenda }) {
+  const today = new Date().toLocaleDateString("en-GB");
+
+  const present = attendance.filter(a => a.date === today && a.status === "Present").length;
+
+  const late = attendance.filter(a => a.lateHours && a.lateHours !== "00:00:00").length;
+
+  const onLeave = leaves.filter(l => (l.status || "").toLowerCase().includes("approved")).length;
+
+  const pendingTasks = agenda.filter(t => Number(t.completionPercent) < 100).length;
+
+  return (
+    <div className="kpi-row">
+      <KPICard label="Total Employees" value={employees.length} />
+      <KPICard label="Present Today" value={present} />
+      <KPICard label="Late Today" value={late} />
+      <KPICard label="On Leave" value={onLeave} />
+      <KPICard label="Pending Tasks" value={pendingTasks} />
+    </div>
+  );
+}
+
+/* ================= ATTENDANCE TREND ================= */
+function AttendanceChart({ attendance }) {
+  const ref = React.useRef();
+  const chartRef = React.useRef();
+
+  useEffect(() => {
+    if (!attendance.length) return;
+
+    const monthMap = {};
+    attendance.forEach(a => {
+      const key = `${a.month+1}-${a.year}`;
+      monthMap[key] = (monthMap[key] || 0) + 1;
+    });
+
+    const labels = Object.keys(monthMap);
+    const data = Object.values(monthMap);
+
+    if (chartRef.current) chartRef.current.destroy();
+
+    chartRef.current = new Chart(ref.current, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Attendance Trend",
+          data,
+          tension: .4,
+          fill: true
+        }]
+      }
+    });
+
+    return () => chartRef.current?.destroy();
+  }, [attendance]);
+
+  return <canvas ref={ref} height="120"></canvas>;
+}
+
+/* ================= LEAVE PIE ================= */
+function LeaveChart({ leaves }) {
+  const ref = React.useRef();
+  const chartRef = React.useRef();
+
+  useEffect(() => {
+    if (!leaves.length) return;
+
+    let cl = 0, sl = 0;
+
+    leaves.forEach(l => {
+      if ((l.type || "").includes("Casual")) cl += l.appliedDays;
+      if ((l.type || "").includes("Sick")) sl += l.appliedDays;
+    });
+
+    if (chartRef.current) chartRef.current.destroy();
+
+    chartRef.current = new Chart(ref.current, {
+      type: "pie",
+      data: {
+        labels: ["Casual Leave", "Sick Leave"],
+        datasets: [{ data: [cl, sl] }]
+      }
+    });
+
+    return () => chartRef.current?.destroy();
+  }, [leaves]);
+
+  return <canvas ref={ref} height="120"></canvas>;
+}
+
+/* ================= TASK STATUS ================= */
+function TaskChart({ agenda }) {
+  const ref = React.useRef();
+  const chartRef = React.useRef();
+
+  useEffect(() => {
+    if (!agenda.length) return;
+
+    let complete = 0, pending = 0;
+
+    agenda.forEach(t => {
+      Number(t.completionPercent) >= 100 ? complete++ : pending++;
+    });
+
+    if (chartRef.current) chartRef.current.destroy();
+
+    chartRef.current = new Chart(ref.current, {
+      type: "doughnut",
+      data: {
+        labels: ["Completed", "Pending"],
+        datasets: [{ data: [complete, pending] }]
+      }
+    });
+
+    return () => chartRef.current?.destroy();
+  }, [agenda]);
+
+  return <canvas ref={ref} height="120"></canvas>;
+}
+
+/* ================= MAIN DASHBOARD ================= */
+function HRDashboard({ employees, attendance, leaves, agenda }) {
+  return (
+    <>
+      <HRKPIs
+        employees={employees}
+        attendance={attendance}
+        leaves={leaves}
+        agenda={agenda}
+      />
+
+      <div className="row">
+        <div className="card">
+          <strong>Attendance Trend</strong>
+          <AttendanceChart attendance={attendance} />
+        </div>
+
+        <div className="card">
+          <strong>Leave Distribution</strong>
+          <LeaveChart leaves={leaves} />
+        </div>
+
+        <div className="card">
+          <strong>Task Completion</strong>
+          <TaskChart agenda={agenda} />
+        </div>
+      </div>
+    </>
+  );
+}
+
 
 /* ------------ Attendance Page ------------ */
 function AttendancePage({ attendance, leaves }) {
@@ -1602,6 +1756,14 @@ if (selectedEmployeeEmail) {
 
 
         </div>
+{activeTab === 'Dashboard' && (
+  <HRDashboard
+    employees={employees}
+    attendance={filteredAttendance}
+    leaves={filteredLeaves}
+    agenda={filteredAgenda}
+  />
+)}
 
         {activeTab === 'Attendance' && (
           <AttendancePage attendance={filteredAttendance} leaves={filteredLeaves} />
@@ -1636,6 +1798,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
