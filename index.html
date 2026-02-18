@@ -654,6 +654,7 @@ function KPICard({label, value}) {
   );
 }
   /* ================= DASHBOARD KPI ================= */
+/* ================= DASHBOARD KPI ================= */
 function HRKPIs({ employees, attendance, leaves }) {
 
   const today = new Date();
@@ -708,53 +709,7 @@ function HRKPIs({ employees, attendance, leaves }) {
 }
 
 
-   /* ================= ABSENT ================= */
-  const absent = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return (
-      d &&
-      d.toDateString() === today.toDateString() &&
-      (!a.timeIn || a.timeIn === "NA")   // 🔥 KEY LOGIC
-    );
-  }).length;
-
-  /* ================= LATE ================= */
-  const late = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return (
-      d &&
-      d.toDateString() === today.toDateString() &&
-      a.lateHours &&
-      a.lateHours !== "On Time"
-    );
-  }).length;
-
-  /* ================= ON LEAVE ================= */
-  const onLeave = leaves.filter(l => {
-    if (!(l.status || "").toLowerCase().includes("approved")) return false;
-
-    const start = parseDate(l.start);
-    const end = parseDate(l.end);
-
-    return (
-      start &&
-      end &&
-      today >= start &&
-      today <= end
-    );
-  }).length;
-
-  return (
-    <div className="kpi-row">
-      <KPICard label="Total Employees" value={employees.length} />
-      <KPICard label="Present Today" value={present} />
-      <KPICard label="Absent Today" value={absent} />
-      <KPICard label="On Leave Today" value={onLeave} />
-      <KPICard label="Late Today" value={late} />
-    </div>
-  );
-}
-
+/* ================= ATTENDANCE TREND ================= */
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
@@ -766,25 +721,24 @@ function AttendanceChart({ attendance }) {
     const year = now.getFullYear();
 
     const days = {};
+
     attendance.forEach(a => {
-  if (a.month === month && a.year === year && a.timeIn) {
+      if (a.month === month && a.year === year && a.timeIn && a.timeIn.includes(":")) {
+        const d = new Date(a.date);
+        if (isNaN(d)) return;
 
-    if (!a.timeIn || !a.timeIn.includes(":")) return;
+        const day = d.getDate();
 
-const minutes =
-  Number(a.timeIn.split(":")[0]) * 60 +
-  Number(a.timeIn.split(":")[1]);
+        const mins =
+          Number(a.timeIn.split(":")[0]) * 60 +
+          Number(a.timeIn.split(":")[1]);
 
-    if (mins > 605) {
-      lateMap[a.employeeEmail] =
-        (lateMap[a.employeeEmail] || 0) + 1;
-    }
-  }
-});
+        days[day] = mins;
+      }
+    });
 
-
-    const labels = Object.keys(days);
-    const data = Object.values(days);
+    const labels = Object.keys(days).sort((a,b)=>a-b);
+    const data = labels.map(l => days[l]);
 
     if (chartRef.current) chartRef.current.destroy();
 
@@ -793,9 +747,9 @@ const minutes =
       data: {
         labels,
         datasets: [{
-          label: "Marked In Time (minutes)",
+          label: "Check-In Time (minutes)",
           data,
-          tension:.3
+          tension: .3
         }]
       }
     });
@@ -902,20 +856,20 @@ const today = new Date();
   const year = now.getFullYear();
 
   const lateMap = {};
-  attendance.forEach(a => {
-    if (
-      a.month === month &&
-      a.year === year &&
-      a.timeIn &&
-      const mins = Number(a.timeIn.split(":")[0]) * 60 +
-             Number(a.timeIn.split(":")[1]);
+ attendance.forEach(a => {
+  if (a.month === month && a.year === year && a.timeIn && a.timeIn.includes(":")) {
 
-if (mins > 605)
-    ) {
+    const mins =
+      Number(a.timeIn.split(":")[0]) * 60 +
+      Number(a.timeIn.split(":")[1]);
+
+    if (mins > 605) {
       lateMap[a.employeeEmail] =
         (lateMap[a.employeeEmail] || 0) + 1;
     }
-  });
+  }
+});
+
 
   const mostLate = Object.entries(lateMap)
     .map(([email, count]) => ({ email, count }))
@@ -2006,6 +1960,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
