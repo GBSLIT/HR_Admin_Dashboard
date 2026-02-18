@@ -65,9 +65,14 @@
       background:var(--card); border-radius:12px;
       padding:16px; box-shadow: 0 8px 28px rgba(15,23,42,0.03);
       margin-top:16px;
+       height:100%;  
     }
 
-    .row { display:flex; gap:16px; align-items:flex-start; }
+   .row {
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:16px;
+}
     .col-2 { display:flex; flex-direction:column; gap:16px; flex:1; }
     table { width:100%; border-collapse:collapse; margin-top:12px; }
     th, td {
@@ -707,7 +712,6 @@ function HRKPIs({ employees, attendance, leaves }) {
     </div>
   );
 }
-/* ================= ATTENDANCE TREND ================= */
 /* ================= PROFESSIONAL ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
@@ -802,10 +806,10 @@ function AttendanceChart({ attendance }) {
   }, [attendance]);
 
   return (
-    <div style={{height:"420px", width:"100%"}}>
-      <canvas ref={ref}></canvas>
-    </div>
-  );
+  <div style={{height:"350px", width:"100%"}}>
+    <canvas ref={ref}></canvas>
+  </div>
+);
 }
 
 
@@ -832,7 +836,12 @@ function LeaveChart({ leaves, leaveSummary }) {
     });
   }, [leaveSummary]);
 
-  return <canvas ref={ref}></canvas>;
+  return (
+  <div style={{height:"350px", width:"100%"}}>
+    <canvas ref={ref}></canvas>
+  </div>
+);
+
 }
 
 
@@ -869,7 +878,12 @@ function TaskChart({ agenda }) {
 function parseDate(val) {
   if (!val) return null;
   const d = new Date(val);
-  return isNaN(d) ? null : d;
+  return (
+  <div style={{height:"350px", width:"100%"}}>
+    <canvas ref={ref}></canvas>
+  </div>
+);
+
 }
 
 
@@ -2011,6 +2025,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
