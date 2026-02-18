@@ -656,32 +656,60 @@ function KPICard({label, value}) {
   /* ================= DASHBOARD KPI ================= */
 function HRKPIs({ employees, attendance, leaves }) {
 
-  const today = new Date().toLocaleDateString("en-GB");
+  const today = new Date();
 
-  // PRESENT
-  const present = attendance.filter(a =>
-    a.date === today &&
-    (a.status || "").toLowerCase().includes("marked in")
-  ).length;
+  function parseDate(d) {
+    if (!d) return null;
+    const parts = d.split("-");
+    return new Date(`${parts[1]} ${parts[0]}, ${parts[2]}`);
+  }
 
-  // ABSENT
-  const absent = attendance.filter(a =>
-    a.date === today &&
-    (a.status || "").toLowerCase().includes("not marked")
-  ).length;
+  /* ================= PRESENT ================= */
+  const present = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      a.timeIn &&                 // 🔥 KEY LOGIC
+      a.timeIn !== "NA"
+    );
+  }).length;
 
-  // LATE
-  const late = attendance.filter(a =>
-    a.date === today &&
-    a.timeIn &&
-    a.timeIn > "10:05"
-  ).length;
+  /* ================= ABSENT ================= */
+  const absent = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      (!a.timeIn || a.timeIn === "NA")   // 🔥 KEY LOGIC
+    );
+  }).length;
 
-  // ON LEAVE TODAY
-  const onLeave = leaves.filter(l =>
-    (l.status || "").toLowerCase().includes("approved") &&
-    l.start === today
-  ).length;
+  /* ================= LATE ================= */
+  const late = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      a.lateHours &&
+      a.lateHours !== "On Time"
+    );
+  }).length;
+
+  /* ================= ON LEAVE ================= */
+  const onLeave = leaves.filter(l => {
+    if (!(l.status || "").toLowerCase().includes("approved")) return false;
+
+    const start = parseDate(l.start);
+    const end = parseDate(l.end);
+
+    return (
+      start &&
+      end &&
+      today >= start &&
+      today <= end
+    );
+  }).length;
 
   return (
     <div className="kpi-row">
@@ -693,6 +721,7 @@ function HRKPIs({ employees, attendance, leaves }) {
     </div>
   );
 }
+
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
@@ -797,16 +826,25 @@ function TaskChart({ agenda }) {
   const getEmp = email =>
     employees.find(e => e.email === email);
 
-  const absentToday = attendance.filter(a =>
-    a.date === today &&
-    (a.status || "").toLowerCase().includes("not marked")
+  const absentToday = attendance.filter(a => {
+  const d = parseDate(a.date);
+  return (
+    d &&
+    d.toDateString() === today.toDateString() &&
+    (!a.timeIn || a.timeIn === "NA")
   );
+});
 
-  const lateToday = attendance.filter(a =>
-    a.date === today &&
-    a.timeIn &&
-    a.timeIn > "10:05"
+  const lateToday = attendance.filter(a => {
+  const d = parseDate(a.date);
+  return (
+    d &&
+    d.toDateString() === today.toDateString() &&
+    a.lateHours &&
+    a.lateHours !== "On Time"
   );
+});
+
 
   const now = new Date();
   const month = now.getMonth();
@@ -1914,6 +1952,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
