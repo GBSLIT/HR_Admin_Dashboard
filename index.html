@@ -708,6 +708,7 @@ function HRKPIs({ employees, attendance, leaves }) {
   );
 }
 /* ================= ATTENDANCE TREND ================= */
+/* ================= PROFESSIONAL ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
   const chartRef = React.useRef();
@@ -717,29 +718,28 @@ function AttendanceChart({ attendance }) {
     const month = now.getMonth();
     const year = now.getFullYear();
 
-    const labels = [];
-    const data = [];
-
-    attendance.forEach(a => {
-      if (
+    const records = attendance
+      .filter(a =>
         a.month === month &&
         a.year === year &&
         a.timeIn &&
         a.timeIn.includes(":")
-      ) {
-        const d = new Date(a.date);
-        if (isNaN(d)) return;
+      )
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // X Axis = Date
-        labels.push(d.getDate());
+    const labels = [];
+    const data = [];
 
-        // Convert HH:MM → decimal hours
-        const parts = a.timeIn.split(":");
-        const hours = Number(parts[0]);
-        const mins = Number(parts[1]);
+    records.forEach(a => {
+      const d = new Date(a.date);
+      if (isNaN(d)) return;
 
-        data.push(hours + mins / 60);
-      }
+      // X-axis = Daily date
+      labels.push(d.getDate());
+
+      // Convert HH:MM → decimal hour
+      const [h, m] = a.timeIn.split(":").map(Number);
+      data.push(h + m / 60);
     });
 
     if (chartRef.current) chartRef.current.destroy();
@@ -751,23 +751,37 @@ function AttendanceChart({ attendance }) {
         datasets: [{
           label: "Check-In Time",
           data,
-          tension: .3
+          tension: 0.35,
+          pointRadius: 5,
+          borderWidth: 3,
+          fill: false
         }]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
         scales: {
           x: {
             title: {
               display: true,
-              text: "Date of Month"
+              text: "Date of Month",
+              font: { size: 14 }
             }
           },
+
           y: {
             title: {
               display: true,
-              text: "Check-In Time"
+              text: "Check-In Time",
+              font: { size: 14 }
             },
+
+            min: 7,
+            max: 20,
+
             ticks: {
+              stepSize: 0.5, // 🔥 30 min interval
               callback: function(value) {
                 const h = Math.floor(value);
                 const m = Math.round((value - h) * 60);
@@ -775,14 +789,25 @@ function AttendanceChart({ attendance }) {
               }
             }
           }
+        },
+
+        plugins: {
+          legend: {
+            labels: { font: { size: 14 } }
+          }
         }
       }
     });
 
   }, [attendance]);
 
-  return <canvas ref={ref}></canvas>;
+  return (
+    <div style={{height:"420px", width:"100%"}}>
+      <canvas ref={ref}></canvas>
+    </div>
+  );
 }
+
 
 /* ================= LEAVE PIE ================= */
 function LeaveChart({ leaves, leaveSummary }) {
@@ -1986,6 +2011,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
