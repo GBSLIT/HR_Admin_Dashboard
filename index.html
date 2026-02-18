@@ -889,7 +889,7 @@ function TaskChart({ agenda }) {
 
 
 /* ================= MAIN DASHBOARD ================= */
-function HRDashboard({ employees, attendance, leaves, agenda }) {
+function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
   return (
     <>
       <HRKPIs
@@ -906,7 +906,7 @@ function HRDashboard({ employees, attendance, leaves, agenda }) {
 
         <div className="card">
           <strong>Leave Distribution</strong>
-          <LeaveChart leaves={leaves} />
+          <LeaveChart leaves={leaves} leaveSummary={leaveSummary} />
         </div>
 
         <div className="card">
@@ -1873,11 +1873,12 @@ if (selectedEmployeeEmail) {
         </div>
 {activeTab === 'Dashboard' && (
   <HRDashboard
-    employees={employees}
-    attendance={filteredAttendance}
-    leaves={filteredLeaves}
-    agenda={filteredAgenda}
-  />
+  employees={employees}
+  attendance={filteredAttendance}
+  leaves={filteredLeaves}
+  agenda={filteredAgenda}
+  leaveSummary={filteredLeaveSummary}
+/>
 )}
 
         {activeTab === 'Attendance' && (
@@ -1913,6 +1914,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
