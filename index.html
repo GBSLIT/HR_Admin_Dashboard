@@ -709,15 +709,6 @@ function HRKPIs({ employees, attendance, leaves }) {
 
 
   /* ================= PRESENT ================= */
-  const present = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return (
-      d &&
-      d.toDateString() === today.toDateString() &&
-      a.timeIn &&                 // 🔥 KEY LOGIC
-      a.timeIn !== "NA"
-    );
-  }).length;
 
   /* ================= ABSENT ================= */
   const absent = attendance.filter(a => {
@@ -779,7 +770,9 @@ function AttendanceChart({ attendance }) {
     const days = {};
     attendance.forEach(a => {
       if (a.month === month && a.year === year && a.timeIn) {
-        const day = new Date(a.date).getDate();
+        const d = new Date(a.date);
+if (isNaN(d)) return;
+const day = d.getDate();
         const minutes = Number(a.timeIn.split(":")[0])*60 +
                         Number(a.timeIn.split(":")[1]);
         days[day] = minutes;
@@ -863,25 +856,22 @@ function TaskChart({ agenda }) {
 
   return <canvas ref={ref} height="120"></canvas>;
 }
-  function parseDate(val) {
-  if (!val) return null;
-  const d = new Date(val);
-  return isNaN(d) ? null : d;
-}
+ 
 function parseDate(val) {
   if (!val) return null;
   const d = new Date(val);
   return isNaN(d) ? null : d;
 }
 
-const today = new Date();
 
   function HRLists({ employees, attendance }) {
 
 const today = new Date();
 
   const getEmp = email =>
-    employees.find(e => e.email === email);
+    employees.find(e =>
+  e.email?.toLowerCase() === email?.toLowerCase()
+);
 
   const absentToday = attendance.filter(a => {
   const d = parseDate(a.date);
@@ -913,7 +903,10 @@ const today = new Date();
       a.month === month &&
       a.year === year &&
       a.timeIn &&
-      a.timeIn > "10:05"
+      const mins = Number(a.timeIn.split(":")[0]) * 60 +
+             Number(a.timeIn.split(":")[1]);
+
+if (mins > 605)
     ) {
       lateMap[a.employeeEmail] =
         (lateMap[a.employeeEmail] || 0) + 1;
