@@ -66,6 +66,31 @@
       padding:16px; box-shadow: 0 8px 28px rgba(15,23,42,0.03);
       margin-top:16px;
     }
+/* ===== DASHBOARD GRID FIX ===== */
+.dashboard-row{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:16px;
+  margin-top:16px;
+}
+
+.dashboard-card{
+  height:380px;
+  display:flex;
+  flex-direction:column;
+}
+
+.chart-wrapper{
+  flex:1;
+  position:relative;
+}
+
+/* Mobile responsive */
+@media (max-width:1100px){
+  .dashboard-row{
+    grid-template-columns: 1fr;
+  }
+}
 
     .row { display:flex; gap:16px; align-items:flex-start; }
     .col-2 { display:flex; flex-direction:column; gap:16px; flex:1; }
@@ -709,7 +734,7 @@ function HRKPIs({ employees, attendance, leaves }) {
 }
 
 
-/* ================= ATTENDANCE TREND ================= */
+
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
@@ -747,16 +772,38 @@ function AttendanceChart({ attendance }) {
       data: {
         labels,
         datasets: [{
-          label: "Check-In Time (minutes)",
+          label: "Check-In Time",
           data,
-          tension: .3
+          tension:.3
         }]
+      },
+      options:{
+        maintainAspectRatio:false,
+        scales:{
+          x:{
+            title:{display:true, text:"Date of Month"}
+          },
+          y:{
+            min:420,
+            max:1200,
+            ticks:{
+              stepSize:30,
+              callback:(val)=>{
+                const h=Math.floor(val/60);
+                const m=val%60;
+                return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
+              }
+            },
+            title:{display:true, text:"Check-In Time"}
+          }
+        }
       }
     });
   }, [attendance]);
 
   return <canvas ref={ref}></canvas>;
 }
+
 
 /* ================= LEAVE PIE ================= */
 function LeaveChart({ leaves, leaveSummary }) {
@@ -943,23 +990,31 @@ function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
         attendance={attendance}
         leaves={leaves}
       />
+      <div className="dashboard-row">
 
-      <div className="row">
-        <div className="card">
-          <strong>Attendance Trend</strong>
-          <AttendanceChart attendance={attendance} />
-        </div>
+  <div className="card dashboard-card">
+    <strong>Attendance Trend</strong>
+    <div className="chart-wrapper">
+      <AttendanceChart attendance={attendance}/>
+    </div>
+  </div>
 
-        <div className="card">
-          <strong>Leave Distribution</strong>
-          <LeaveChart leaves={leaves} leaveSummary={leaveSummary} />
-        </div>
+  <div className="card dashboard-card">
+    <strong>Leave Distribution</strong>
+    <div className="chart-wrapper">
+      <LeaveChart leaves={leaves} leaveSummary={leaveSummary}/>
+    </div>
+  </div>
 
-        <div className="card">
-          <strong>Task Completion</strong>
-          <TaskChart agenda={agenda} />
-        </div>
-      </div>
+  <div className="card dashboard-card">
+    <strong>Task Completion</strong>
+    <div className="chart-wrapper">
+      <TaskChart agenda={agenda}/>
+    </div>
+  </div>
+
+</div>
+
 
       <HRLists employees={employees} attendance={attendance} />
     </>
@@ -1960,3 +2015,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
