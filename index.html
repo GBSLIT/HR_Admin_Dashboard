@@ -707,9 +707,6 @@ function HRKPIs({ employees, attendance, leaves }) {
     </div>
   );
 }
-
-
-/* ================= ATTENDANCE TREND ================= */
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
@@ -720,25 +717,30 @@ function AttendanceChart({ attendance }) {
     const month = now.getMonth();
     const year = now.getFullYear();
 
-    const days = {};
+    const labels = [];
+    const data = [];
 
     attendance.forEach(a => {
-      if (a.month === month && a.year === year && a.timeIn && a.timeIn.includes(":")) {
+      if (
+        a.month === month &&
+        a.year === year &&
+        a.timeIn &&
+        a.timeIn.includes(":")
+      ) {
         const d = new Date(a.date);
         if (isNaN(d)) return;
 
-        const day = d.getDate();
+        // X Axis = Date
+        labels.push(d.getDate());
 
-        const mins =
-          Number(a.timeIn.split(":")[0]) * 60 +
-          Number(a.timeIn.split(":")[1]);
+        // Convert HH:MM → decimal hours
+        const parts = a.timeIn.split(":");
+        const hours = Number(parts[0]);
+        const mins = Number(parts[1]);
 
-        days[day] = mins;
+        data.push(hours + mins / 60);
       }
     });
-
-    const labels = Object.keys(days).sort((a,b)=>a-b);
-    const data = labels.map(l => days[l]);
 
     if (chartRef.current) chartRef.current.destroy();
 
@@ -747,12 +749,36 @@ function AttendanceChart({ attendance }) {
       data: {
         labels,
         datasets: [{
-          label: "Check-In Time (minutes)",
+          label: "Check-In Time",
           data,
           tension: .3
         }]
+      },
+      options: {
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Date of Month"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Check-In Time"
+            },
+            ticks: {
+              callback: function(value) {
+                const h = Math.floor(value);
+                const m = Math.round((value - h) * 60);
+                return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+              }
+            }
+          }
+        }
       }
     });
+
   }, [attendance]);
 
   return <canvas ref={ref}></canvas>;
@@ -1960,6 +1986,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
