@@ -62,17 +62,23 @@
     .kpi .value{ font-size:20px; font-weight:700; margin-top:6px; }
 
     .card {
-      background:var(--card); border-radius:12px;
-      padding:16px; box-shadow: 0 8px 28px rgba(15,23,42,0.03);
-      margin-top:16px;
-       height:100%;  
-    }
+  background:var(--card);
+  border-radius:12px;
+  padding:16px;
+  margin-top:16px;
+  display:flex;
+  flex-direction:column;
+  min-height:420px;
+}
 
-   .row {
+
+.row {
   display:grid;
   grid-template-columns: repeat(3, 1fr);
-  gap:16px;
+  gap:20px;
+  align-items:stretch;
 }
+
     .col-2 { display:flex; flex-direction:column; gap:16px; flex:1; }
     table { width:100%; border-collapse:collapse; margin-top:12px; }
     th, td {
@@ -138,6 +144,14 @@
       .main{padding:14px;}
       .kpi{min-width:140px;}
     }
+    .section-title {
+  font-size:18px;
+  font-weight:700;
+  margin-top:30px;
+  margin-bottom:10px;
+  color:#0f172a;
+}
+
 
     /* Profile layout */
     .profile-layout{
@@ -951,7 +965,8 @@ const today = new Date();
 
       <div className="card" style={{flex:1}}>
         <strong>Absent Today</strong>
-        <table>
+        <div className="table-scroll">
+  <table>
           <tbody>
             {absentToday.map((a,i)=>{
               const emp = getEmp(a.employeeEmail);
@@ -968,7 +983,8 @@ const today = new Date();
 
       <div className="card" style={{flex:1}}>
         <strong>Late Today</strong>
-        <table>
+        <div className="table-scroll">
+  <table>
           <tbody>
             {lateToday.map((a,i)=>{
               const emp = getEmp(a.employeeEmail);
@@ -985,7 +1001,8 @@ const today = new Date();
 
       <div className="card" style={{flex:1}}>
         <strong>Most Late This Month</strong>
-        <table>
+        <div className="table-scroll">
+  <table>
           <tbody>
             {mostLate.map((r,i)=>{
               const emp = getEmp(r.email);
@@ -1053,7 +1070,8 @@ function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
     fontWeight:700,
     marginBottom:12
   }}>
-    Daily Insights
+   <div className="section-title">Daily Insights</div>
+
   </div>
 
   <HRLists employees={employees} attendance={attendance} />
@@ -2058,6 +2076,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
