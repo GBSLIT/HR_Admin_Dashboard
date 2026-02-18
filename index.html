@@ -61,15 +61,14 @@
     .kpi .label{ color:var(--muted); font-size:12px; }
     .kpi .value{ font-size:20px; font-weight:700; margin-top:6px; }
 
-    .card {
+.card {
   background:var(--card);
   border-radius:12px;
   padding:16px;
+  box-shadow: 0 8px 28px rgba(15,23,42,0.03);
   margin-top:16px;
-  display:flex;
-  flex-direction:column;
-  min-height:420px;
 }
+
 
 /* ================= DEFAULT ROW (OLD STRUCTURE) ================= */
 
@@ -91,11 +90,12 @@
 /* ================= ATTENDANCE PAGE FIX ================= */
 
 .col-2 {
-  flex:2;
   display:flex;
   flex-direction:column;
   gap:16px;
+  flex:1;
 }
+
 
 .summary-card {
   flex:1;
@@ -114,13 +114,7 @@
   }
 }
 
-    .col-2 { display:flex; flex-direction:column; gap:16px; flex:1; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; }
-    th, td {
-      text-align:left; padding:10px 8px;
-      border-bottom:1px solid #f1f5f9;
-      font-size:14px;
-    }
+   
 
     .muted { color:var(--muted); font-size:13px; }
     .small { font-size:13px; color:var(--muted); }
@@ -2113,6 +2107,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
