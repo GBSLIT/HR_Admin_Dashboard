@@ -658,11 +658,55 @@ function HRKPIs({ employees, attendance, leaves }) {
 
   const today = new Date();
 
-  function parseDate(d) {
-    if (!d) return null;
-    const parts = d.split("-");
-    return new Date(`${parts[1]} ${parts[0]}, ${parts[2]}`);
+  function parseDate(val) {
+    if (!val) return null;
+    const d = new Date(val);
+    return isNaN(d) ? null : d;
   }
+
+  const present = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return d &&
+      d.toDateString() === today.toDateString() &&
+      a.timeIn &&
+      a.timeIn !== "NA";
+  }).length;
+
+  const absent = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return d &&
+      d.toDateString() === today.toDateString() &&
+      (!a.timeIn || a.timeIn === "NA");
+  }).length;
+
+  const late = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return d &&
+      d.toDateString() === today.toDateString() &&
+      a.lateHours &&
+      a.lateHours !== "On Time";
+  }).length;
+
+  const onLeave = leaves.filter(l => {
+    if (!(l.status || "").toLowerCase().includes("approved")) return false;
+
+    const start = parseDate(l.start);
+    const end = parseDate(l.end);
+
+    return start && end && today >= start && today <= end;
+  }).length;
+
+  return (
+    <div className="kpi-row">
+      <KPICard label="Total Employees" value={employees.length} />
+      <KPICard label="Present Today" value={present} />
+      <KPICard label="Absent Today" value={absent} />
+      <KPICard label="On Leave Today" value={onLeave} />
+      <KPICard label="Late Today" value={late} />
+    </div>
+  );
+}
+
 
   /* ================= PRESENT ================= */
   const present = attendance.filter(a => {
@@ -819,9 +863,22 @@ function TaskChart({ agenda }) {
 
   return <canvas ref={ref} height="120"></canvas>;
 }
+  function parseDate(val) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+}
+function parseDate(val) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+}
+
+const today = new Date();
+
   function HRLists({ employees, attendance }) {
 
-  const today = new Date().toLocaleDateString("en-GB");
+const today = new Date();
 
   const getEmp = email =>
     employees.find(e => e.email === email);
@@ -1952,6 +2009,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
