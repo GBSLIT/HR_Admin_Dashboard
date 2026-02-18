@@ -907,54 +907,51 @@ function parseDate(val) {
 
 
 
-  function HRLists({ employees, attendance }) {
+ function HRLists({ employees, attendance }) {
 
-const today = new Date();
+  const today = new Date();
 
   const getEmp = email =>
     employees.find(e =>
-  e.email?.toLowerCase() === email?.toLowerCase()
-);
+      e.email?.toLowerCase() === email?.toLowerCase()
+    );
 
   const absentToday = attendance.filter(a => {
-  const d = parseDate(a.date);
-  return (
-    d &&
-    d.toDateString() === today.toDateString() &&
-    (!a.timeIn || a.timeIn === "NA")
-  );
-});
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      (!a.timeIn || a.timeIn === "NA")
+    );
+  });
 
   const lateToday = attendance.filter(a => {
-  const d = parseDate(a.date);
-  return (
-    d &&
-    d.toDateString() === today.toDateString() &&
-    a.lateHours &&
-    a.lateHours !== "On Time"
-  );
-});
-
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      a.lateHours &&
+      a.lateHours !== "On Time"
+    );
+  });
 
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
 
   const lateMap = {};
- attendance.forEach(a => {
-  if (a.month === month && a.year === year && a.timeIn && a.timeIn.includes(":")) {
+  attendance.forEach(a => {
+    if (a.month === month && a.year === year && a.timeIn && a.timeIn.includes(":")) {
+      const mins =
+        Number(a.timeIn.split(":")[0]) * 60 +
+        Number(a.timeIn.split(":")[1]);
 
-    const mins =
-      Number(a.timeIn.split(":")[0]) * 60 +
-      Number(a.timeIn.split(":")[1]);
-
-    if (mins > 605) {
-      lateMap[a.employeeEmail] =
-        (lateMap[a.employeeEmail] || 0) + 1;
+      if (mins > 605) {
+        lateMap[a.employeeEmail] =
+          (lateMap[a.employeeEmail] || 0) + 1;
+      }
     }
-  }
-});
-
+  });
 
   const mostLate = Object.entries(lateMap)
     .map(([email, count]) => ({ email, count }))
@@ -963,64 +960,69 @@ const today = new Date();
   return (
     <div className="row">
 
-      <div className="card" style={{flex:1}}>
+      {/* ABSENT */}
+      <div className="card">
         <strong>Absent Today</strong>
         <div className="table-scroll">
-  <table>
-          <tbody>
-            {absentToday.map((a,i)=>{
-              const emp = getEmp(a.employeeEmail);
-              return (
-                <tr key={i}>
-                  <td>{emp?.name}</td>
-                  <td>{emp?.department}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          <table>
+            <tbody>
+              {absentToday.map((a,i)=>{
+                const emp = getEmp(a.employeeEmail);
+                return (
+                  <tr key={i}>
+                    <td>{emp?.name}</td>
+                    <td>{emp?.department}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="card" style={{flex:1}}>
+      {/* LATE */}
+      <div className="card">
         <strong>Late Today</strong>
         <div className="table-scroll">
-  <table>
-          <tbody>
-            {lateToday.map((a,i)=>{
-              const emp = getEmp(a.employeeEmail);
-              return (
-                <tr key={i}>
-                  <td>{emp?.name}</td>
-                  <td>{a.timeIn}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          <table>
+            <tbody>
+              {lateToday.map((a,i)=>{
+                const emp = getEmp(a.employeeEmail);
+                return (
+                  <tr key={i}>
+                    <td>{emp?.name}</td>
+                    <td>{a.timeIn}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="card" style={{flex:1}}>
+      {/* MOST LATE */}
+      <div className="card">
         <strong>Most Late This Month</strong>
         <div className="table-scroll">
-  <table>
-          <tbody>
-            {mostLate.map((r,i)=>{
-              const emp = getEmp(r.email);
-              return (
-                <tr key={i}>
-                  <td>{emp?.name}</td>
-                  <td>{r.count}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          <table>
+            <tbody>
+              {mostLate.map((r,i)=>{
+                const emp = getEmp(r.email);
+                return (
+                  <tr key={i}>
+                    <td>{emp?.name}</td>
+                    <td>{r.count}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
   );
 }
-
 
 /* ================= MAIN DASHBOARD ================= */
 function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
@@ -2076,6 +2078,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
