@@ -656,32 +656,45 @@ function KPICard({label, value}) {
   /* ================= DASHBOARD KPI ================= */
 function HRKPIs({ employees, attendance, leaves }) {
 
-  const today = new Date().toLocaleDateString("en-GB");
+  const today = new Date();
 
-  // PRESENT
-  const present = attendance.filter(a =>
-    a.date === today &&
-    (a.status || "").toLowerCase().includes("marked in")
-  ).length;
+  function parseDate(val) {
+    if (!val) return null;
+    const d = new Date(val);
+    return isNaN(d) ? null : d;
+  }
 
-  // ABSENT
-  const absent = attendance.filter(a =>
-    a.date === today &&
-    (a.status || "").toLowerCase().includes("not marked")
-  ).length;
+  const present = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return d &&
+      d.toDateString() === today.toDateString() &&
+      a.timeIn &&
+      a.timeIn !== "NA";
+  }).length;
 
-  // LATE
-  const late = attendance.filter(a =>
-    a.date === today &&
-    a.timeIn &&
-    a.timeIn > "10:05"
-  ).length;
+  const absent = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return d &&
+      d.toDateString() === today.toDateString() &&
+      (!a.timeIn || a.timeIn === "NA");
+  }).length;
 
-  // ON LEAVE TODAY
-  const onLeave = leaves.filter(l =>
-    (l.status || "").toLowerCase().includes("approved") &&
-    l.start === today
-  ).length;
+  const late = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return d &&
+      d.toDateString() === today.toDateString() &&
+      a.lateHours &&
+      a.lateHours !== "On Time";
+  }).length;
+
+  const onLeave = leaves.filter(l => {
+    if (!(l.status || "").toLowerCase().includes("approved")) return false;
+
+    const start = parseDate(l.start);
+    const end = parseDate(l.end);
+
+    return start && end && today >= start && today <= end;
+  }).length;
 
   return (
     <div className="kpi-row">
@@ -693,6 +706,66 @@ function HRKPIs({ employees, attendance, leaves }) {
     </div>
   );
 }
+
+
+  /* ================= PRESENT ================= */
+  const present = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      a.timeIn &&                 // 🔥 KEY LOGIC
+      a.timeIn !== "NA"
+    );
+  }).length;
+
+  /* ================= ABSENT ================= */
+  const absent = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      (!a.timeIn || a.timeIn === "NA")   // 🔥 KEY LOGIC
+    );
+  }).length;
+
+  /* ================= LATE ================= */
+  const late = attendance.filter(a => {
+    const d = parseDate(a.date);
+    return (
+      d &&
+      d.toDateString() === today.toDateString() &&
+      a.lateHours &&
+      a.lateHours !== "On Time"
+    );
+  }).length;
+
+  /* ================= ON LEAVE ================= */
+  const onLeave = leaves.filter(l => {
+    if (!(l.status || "").toLowerCase().includes("approved")) return false;
+
+    const start = parseDate(l.start);
+    const end = parseDate(l.end);
+
+    return (
+      start &&
+      end &&
+      today >= start &&
+      today <= end
+    );
+  }).length;
+
+  return (
+    <div className="kpi-row">
+      <KPICard label="Total Employees" value={employees.length} />
+      <KPICard label="Present Today" value={present} />
+      <KPICard label="Absent Today" value={absent} />
+      <KPICard label="On Leave Today" value={onLeave} />
+      <KPICard label="Late Today" value={late} />
+    </div>
+  );
+}
+
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
@@ -790,23 +863,45 @@ function TaskChart({ agenda }) {
 
   return <canvas ref={ref} height="120"></canvas>;
 }
+  function parseDate(val) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+}
+function parseDate(val) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+}
+
+const today = new Date();
+
   function HRLists({ employees, attendance }) {
 
-  const today = new Date().toLocaleDateString("en-GB");
+const today = new Date();
 
   const getEmp = email =>
     employees.find(e => e.email === email);
 
-  const absentToday = attendance.filter(a =>
-    a.date === today &&
-    (a.status || "").toLowerCase().includes("not marked")
+  const absentToday = attendance.filter(a => {
+  const d = parseDate(a.date);
+  return (
+    d &&
+    d.toDateString() === today.toDateString() &&
+    (!a.timeIn || a.timeIn === "NA")
   );
+});
 
-  const lateToday = attendance.filter(a =>
-    a.date === today &&
-    a.timeIn &&
-    a.timeIn > "10:05"
+  const lateToday = attendance.filter(a => {
+  const d = parseDate(a.date);
+  return (
+    d &&
+    d.toDateString() === today.toDateString() &&
+    a.lateHours &&
+    a.lateHours !== "On Time"
   );
+});
+
 
   const now = new Date();
   const month = now.getMonth();
@@ -889,7 +984,7 @@ function TaskChart({ agenda }) {
 
 
 /* ================= MAIN DASHBOARD ================= */
-function HRDashboard({ employees, attendance, leaves, agenda }) {
+function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
   return (
     <>
       <HRKPIs
@@ -906,7 +1001,7 @@ function HRDashboard({ employees, attendance, leaves, agenda }) {
 
         <div className="card">
           <strong>Leave Distribution</strong>
-          <LeaveChart leaves={leaves} />
+          <LeaveChart leaves={leaves} leaveSummary={leaveSummary} />
         </div>
 
         <div className="card">
@@ -1873,11 +1968,12 @@ if (selectedEmployeeEmail) {
         </div>
 {activeTab === 'Dashboard' && (
   <HRDashboard
-    employees={employees}
-    attendance={filteredAttendance}
-    leaves={filteredLeaves}
-    agenda={filteredAgenda}
-  />
+  employees={employees}
+  attendance={filteredAttendance}
+  leaves={filteredLeaves}
+  agenda={filteredAgenda}
+  leaveSummary={filteredLeaveSummary}
+/>
 )}
 
         {activeTab === 'Attendance' && (
