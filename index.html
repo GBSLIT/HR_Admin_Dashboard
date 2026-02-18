@@ -708,9 +708,7 @@ function HRKPIs({ employees, attendance, leaves }) {
 }
 
 
-  /* ================= PRESENT ================= */
-
-  /* ================= ABSENT ================= */
+   /* ================= ABSENT ================= */
   const absent = attendance.filter(a => {
     const d = parseDate(a.date);
     return (
@@ -769,15 +767,21 @@ function AttendanceChart({ attendance }) {
 
     const days = {};
     attendance.forEach(a => {
-      if (a.month === month && a.year === year && a.timeIn) {
-        const d = new Date(a.date);
-if (isNaN(d)) return;
-const day = d.getDate();
-        const minutes = Number(a.timeIn.split(":")[0])*60 +
-                        Number(a.timeIn.split(":")[1]);
-        days[day] = minutes;
-      }
-    });
+  if (a.month === month && a.year === year && a.timeIn) {
+
+    if (!a.timeIn || !a.timeIn.includes(":")) return;
+
+const minutes =
+  Number(a.timeIn.split(":")[0]) * 60 +
+  Number(a.timeIn.split(":")[1]);
+
+    if (mins > 605) {
+      lateMap[a.employeeEmail] =
+        (lateMap[a.employeeEmail] || 0) + 1;
+    }
+  }
+});
+
 
     const labels = Object.keys(days);
     const data = Object.values(days);
@@ -2002,6 +2006,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
