@@ -658,20 +658,26 @@ function HRKPIs({ employees, attendance, leaves }) {
 
   const today = new Date().toLocaleDateString("en-GB");
 
+  // PRESENT
   const present = attendance.filter(a =>
-    a.date === today && a.status === "Take Marked in"
+    a.date === today &&
+    (a.status || "").toLowerCase().includes("marked in")
   ).length;
 
+  // ABSENT
   const absent = attendance.filter(a =>
-    a.date === today && a.status === "Take not marked in"
+    a.date === today &&
+    (a.status || "").toLowerCase().includes("not marked")
   ).length;
 
-  const late = attendance.filter(a => {
-    if (a.date !== today) return false;
-    if (!a.timeIn) return false;
-    return a.timeIn > "10:05";
-  }).length;
+  // LATE
+  const late = attendance.filter(a =>
+    a.date === today &&
+    a.timeIn &&
+    a.timeIn > "10:05"
+  ).length;
 
+  // ON LEAVE TODAY
   const onLeave = leaves.filter(l =>
     (l.status || "").toLowerCase().includes("approved") &&
     l.start === today
@@ -687,24 +693,28 @@ function HRKPIs({ employees, attendance, leaves }) {
     </div>
   );
 }
-
-
 /* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
   const chartRef = React.useRef();
 
   useEffect(() => {
-    if (!attendance.length) return;
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
 
-    const monthMap = {};
+    const days = {};
     attendance.forEach(a => {
-      const key = `${a.month+1}-${a.year}`;
-      monthMap[key] = (monthMap[key] || 0) + 1;
+      if (a.month === month && a.year === year && a.timeIn) {
+        const day = new Date(a.date).getDate();
+        const minutes = Number(a.timeIn.split(":")[0])*60 +
+                        Number(a.timeIn.split(":")[1]);
+        days[day] = minutes;
+      }
     });
 
-    const labels = Object.keys(monthMap);
-    const data = Object.values(monthMap);
+    const labels = Object.keys(days);
+    const data = Object.values(days);
 
     if (chartRef.current) chartRef.current.destroy();
 
@@ -713,50 +723,43 @@ function AttendanceChart({ attendance }) {
       data: {
         labels,
         datasets: [{
-          label: "Attendance Trend",
+          label: "Marked In Time (minutes)",
           data,
-          tension: .4,
-          fill: true
+          tension:.3
         }]
       }
     });
-
-    return () => chartRef.current?.destroy();
   }, [attendance]);
 
-  return <canvas ref={ref} height="120"></canvas>;
+  return <canvas ref={ref}></canvas>;
 }
 
 /* ================= LEAVE PIE ================= */
-function LeaveChart({ leaves }) {
+function LeaveChart({ leaves, leaveSummary }) {
   const ref = React.useRef();
   const chartRef = React.useRef();
 
   useEffect(() => {
-    if (!leaves.length) return;
+    const used =
+      leaveSummary.usedCL + leaveSummary.usedSL;
 
-    let cl = 0, sl = 0;
-
-    leaves.forEach(l => {
-      if ((l.type || "").includes("Casual")) cl += l.appliedDays;
-      if ((l.type || "").includes("Sick")) sl += l.appliedDays;
-    });
+    const allowed =
+      leaveSummary.allottedCL + leaveSummary.allottedSL;
 
     if (chartRef.current) chartRef.current.destroy();
 
     chartRef.current = new Chart(ref.current, {
       type: "pie",
       data: {
-        labels: ["Casual Leave", "Sick Leave"],
-        datasets: [{ data: [cl, sl] }]
+        labels: ["Used", "Remaining"],
+        datasets: [{ data: [used, allowed-used] }]
       }
     });
+  }, [leaveSummary]);
 
-    return () => chartRef.current?.destroy();
-  }, [leaves]);
-
-  return <canvas ref={ref} height="120"></canvas>;
+  return <canvas ref={ref}></canvas>;
 }
+
 
 /* ================= TASK STATUS ================= */
 function TaskChart({ agenda }) {
@@ -787,52 +790,58 @@ function TaskChart({ agenda }) {
 
   return <canvas ref={ref} height="120"></canvas>;
 }
-function HRLists({ employees, attendance }) {
+  function HRLists({ employees, attendance }) {
 
   const today = new Date().toLocaleDateString("en-GB");
+
+  const getEmp = email =>
+    employees.find(e => e.email === email);
+
+  const absentToday = attendance.filter(a =>
+    a.date === today &&
+    (a.status || "").toLowerCase().includes("not marked")
+  );
+
+  const lateToday = attendance.filter(a =>
+    a.date === today &&
+    a.timeIn &&
+    a.timeIn > "10:05"
+  );
+
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
 
-  // Helper to get employee info
-  const getEmp = email => employees.find(e => e.email === email);
-
-  /* ABSENT TODAY */
-  const absentToday = attendance.filter(a =>
-    a.date === today && a.status === "Take not marked in"
-  );
-
-  /* LATE TODAY */
-  const lateToday = attendance.filter(a =>
-    a.date === today && a.timeIn && a.timeIn > "10:05"
-  );
-
-  /* MOST LATE THIS MONTH */
   const lateMap = {};
   attendance.forEach(a => {
-    if (a.month === month && a.year === year && a.timeIn > "10:05") {
-      lateMap[a.employeeEmail] = (lateMap[a.employeeEmail] || 0) + 1;
+    if (
+      a.month === month &&
+      a.year === year &&
+      a.timeIn &&
+      a.timeIn > "10:05"
+    ) {
+      lateMap[a.employeeEmail] =
+        (lateMap[a.employeeEmail] || 0) + 1;
     }
   });
 
   const mostLate = Object.entries(lateMap)
-    .map(([email,count]) => ({ email, count }))
-    .sort((a,b) => b.count - a.count);
+    .map(([email, count]) => ({ email, count }))
+    .sort((a, b) => b.count - a.count);
 
   return (
     <div className="row">
 
-      {/* ABSENT */}
       <div className="card" style={{flex:1}}>
         <strong>Absent Today</strong>
         <table>
           <tbody>
-            {absentToday.map((a,i) => {
+            {absentToday.map((a,i)=>{
               const emp = getEmp(a.employeeEmail);
               return (
                 <tr key={i}>
-                  <td>{emp?.name || a.employeeEmail}</td>
-                  <td>{emp?.department || "—"}</td>
+                  <td>{emp?.name}</td>
+                  <td>{emp?.department}</td>
                 </tr>
               );
             })}
@@ -840,12 +849,11 @@ function HRLists({ employees, attendance }) {
         </table>
       </div>
 
-      {/* LATE */}
       <div className="card" style={{flex:1}}>
         <strong>Late Today</strong>
         <table>
           <tbody>
-            {lateToday.map((a,i) => {
+            {lateToday.map((a,i)=>{
               const emp = getEmp(a.employeeEmail);
               return (
                 <tr key={i}>
@@ -858,12 +866,11 @@ function HRLists({ employees, attendance }) {
         </table>
       </div>
 
-      {/* MOST LATE */}
       <div className="card" style={{flex:1}}>
         <strong>Most Late This Month</strong>
         <table>
           <tbody>
-            {mostLate.map((r,i) => {
+            {mostLate.map((r,i)=>{
               const emp = getEmp(r.email);
               return (
                 <tr key={i}>
@@ -879,6 +886,7 @@ function HRLists({ employees, attendance }) {
     </div>
   );
 }
+
 
 /* ================= MAIN DASHBOARD ================= */
 function HRDashboard({ employees, attendance, leaves, agenda }) {
@@ -1905,6 +1913,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
