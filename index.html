@@ -61,60 +61,20 @@
     .kpi .label{ color:var(--muted); font-size:12px; }
     .kpi .value{ font-size:20px; font-weight:700; margin-top:6px; }
 
-.card {
-  background:var(--card);
-  border-radius:12px;
-  padding:16px;
-  box-shadow: 0 8px 28px rgba(15,23,42,0.03);
-  margin-top:16px;
-}
+    .card {
+      background:var(--card); border-radius:12px;
+      padding:16px; box-shadow: 0 8px 28px rgba(15,23,42,0.03);
+      margin-top:16px;
+    }
 
-
-/* ================= DEFAULT ROW (OLD STRUCTURE) ================= */
-
-.row {
-  display:flex;
-  gap:20px;
-  align-items:flex-start;
-}
-
-/* ================= DASHBOARD ONLY GRID ================= */
-
-.dashboard-row {
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:20px;
-  align-items:stretch;
-}
-
-/* ================= ATTENDANCE PAGE FIX ================= */
-
-.col-2 {
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-  flex:1;
-}
-
-
-.summary-card {
-  flex:1;
-  min-width:260px;
-}
-
-/* ================= MOBILE ================= */
-
-@media (max-width:1100px){
-  .row{
-    flex-direction:column;
-  }
-
-  .dashboard-row{
-    grid-template-columns: 1fr;
-  }
-}
-
-   
+    .row { display:flex; gap:16px; align-items:flex-start; }
+    .col-2 { display:flex; flex-direction:column; gap:16px; flex:1; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td {
+      text-align:left; padding:10px 8px;
+      border-bottom:1px solid #f1f5f9;
+      font-size:14px;
+    }
 
     .muted { color:var(--muted); font-size:13px; }
     .small { font-size:13px; color:var(--muted); }
@@ -150,6 +110,10 @@
       padding:28px; border-radius:16px;
       box-shadow: 0 12px 40px rgba(15,23,42,0.06);
     }
+
+    .summary-card {
+      min-width:260px;
+    }
     .summary-row {
       display:flex;
       justify-content:space-between;
@@ -169,14 +133,6 @@
       .main{padding:14px;}
       .kpi{min-width:140px;}
     }
-    .section-title {
-  font-size:18px;
-  font-weight:700;
-  margin-top:30px;
-  margin-bottom:10px;
-  color:#0f172a;
-}
-
 
     /* Profile layout */
     .profile-layout{
@@ -698,48 +654,34 @@ function KPICard({label, value}) {
   );
 }
   /* ================= DASHBOARD KPI ================= */
-/* ================= DASHBOARD KPI ================= */
 function HRKPIs({ employees, attendance, leaves }) {
 
-  const today = new Date();
+  const today = new Date().toLocaleDateString("en-GB");
 
-  function parseDate(val) {
-    if (!val) return null;
-    const d = new Date(val);
-    return isNaN(d) ? null : d;
-  }
+  // PRESENT
+  const present = attendance.filter(a =>
+    a.date === today &&
+    (a.status || "").toLowerCase().includes("marked in")
+  ).length;
 
-  const present = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return d &&
-      d.toDateString() === today.toDateString() &&
-      a.timeIn &&
-      a.timeIn !== "NA";
-  }).length;
+  // ABSENT
+  const absent = attendance.filter(a =>
+    a.date === today &&
+    (a.status || "").toLowerCase().includes("not marked")
+  ).length;
 
-  const absent = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return d &&
-      d.toDateString() === today.toDateString() &&
-      (!a.timeIn || a.timeIn === "NA");
-  }).length;
+  // LATE
+  const late = attendance.filter(a =>
+    a.date === today &&
+    a.timeIn &&
+    a.timeIn > "10:05"
+  ).length;
 
-  const late = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return d &&
-      d.toDateString() === today.toDateString() &&
-      a.lateHours &&
-      a.lateHours !== "On Time";
-  }).length;
-
-  const onLeave = leaves.filter(l => {
-    if (!(l.status || "").toLowerCase().includes("approved")) return false;
-
-    const start = parseDate(l.start);
-    const end = parseDate(l.end);
-
-    return start && end && today >= start && today <= end;
-  }).length;
+  // ON LEAVE TODAY
+  const onLeave = leaves.filter(l =>
+    (l.status || "").toLowerCase().includes("approved") &&
+    l.start === today
+  ).length;
 
   return (
     <div className="kpi-row">
@@ -751,7 +693,7 @@ function HRKPIs({ employees, attendance, leaves }) {
     </div>
   );
 }
-/* ================= PROFESSIONAL ATTENDANCE TREND ================= */
+/* ================= ATTENDANCE TREND ================= */
 function AttendanceChart({ attendance }) {
   const ref = React.useRef();
   const chartRef = React.useRef();
@@ -761,29 +703,18 @@ function AttendanceChart({ attendance }) {
     const month = now.getMonth();
     const year = now.getFullYear();
 
-    const records = attendance
-      .filter(a =>
-        a.month === month &&
-        a.year === year &&
-        a.timeIn &&
-        a.timeIn.includes(":")
-      )
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    const labels = [];
-    const data = [];
-
-    records.forEach(a => {
-      const d = new Date(a.date);
-      if (isNaN(d)) return;
-
-      // X-axis = Daily date
-      labels.push(d.getDate());
-
-      // Convert HH:MM → decimal hour
-      const [h, m] = a.timeIn.split(":").map(Number);
-      data.push(h + m / 60);
+    const days = {};
+    attendance.forEach(a => {
+      if (a.month === month && a.year === year && a.timeIn) {
+        const day = new Date(a.date).getDate();
+        const minutes = Number(a.timeIn.split(":")[0])*60 +
+                        Number(a.timeIn.split(":")[1]);
+        days[day] = minutes;
+      }
     });
+
+    const labels = Object.keys(days);
+    const data = Object.values(days);
 
     if (chartRef.current) chartRef.current.destroy();
 
@@ -792,65 +723,16 @@ function AttendanceChart({ attendance }) {
       data: {
         labels,
         datasets: [{
-          label: "Check-In Time",
+          label: "Marked In Time (minutes)",
           data,
-          tension: 0.35,
-          pointRadius: 5,
-          borderWidth: 3,
-          fill: false
+          tension:.3
         }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: "Date of Month",
-              font: { size: 14 }
-            }
-          },
-
-          y: {
-            title: {
-              display: true,
-              text: "Check-In Time",
-              font: { size: 14 }
-            },
-
-            min: 7,
-            max: 20,
-
-            ticks: {
-              stepSize: 0.5, // 🔥 30 min interval
-              callback: function(value) {
-                const h = Math.floor(value);
-                const m = Math.round((value - h) * 60);
-                return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
-              }
-            }
-          }
-        },
-
-        plugins: {
-          legend: {
-            labels: { font: { size: 14 } }
-          }
-        }
       }
     });
-
   }, [attendance]);
 
-  return (
-  <div style={{height:"350px", width:"100%"}}>
-    <canvas ref={ref}></canvas>
-  </div>
-);
+  return <canvas ref={ref}></canvas>;
 }
-
 
 /* ================= LEAVE PIE ================= */
 function LeaveChart({ leaves, leaveSummary }) {
@@ -875,12 +757,7 @@ function LeaveChart({ leaves, leaveSummary }) {
     });
   }, [leaveSummary]);
 
-  return (
-  <div style={{height:"350px", width:"100%"}}>
-    <canvas ref={ref}></canvas>
-  </div>
-);
-
+  return <canvas ref={ref}></canvas>;
 }
 
 
@@ -911,54 +788,25 @@ function TaskChart({ agenda }) {
     return () => chartRef.current?.destroy();
   }, [agenda]);
 
-  return (
-  <div style={{height:"350px", width:"100%"}}>
-    <canvas ref={ref}></canvas>
-  </div>
-);
+  return <canvas ref={ref} height="120"></canvas>;
 }
- 
-function parseDate(val) {
-  if (!val) return null;
+  function HRLists({ employees, attendance }) {
 
-  // handle Excel serial date
-  if (typeof val === "number") {
-    return excelSerialToDate(val);
-  }
-
-  const d = new Date(val);
-  return isNaN(d) ? null : d;
-}
-
-
-
- function HRLists({ employees, attendance }) {
-
-  const today = new Date();
+  const today = new Date().toLocaleDateString("en-GB");
 
   const getEmp = email =>
-    employees.find(e =>
-      e.email?.toLowerCase() === email?.toLowerCase()
-    );
+    employees.find(e => e.email === email);
 
-  const absentToday = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return (
-      d &&
-      d.toDateString() === today.toDateString() &&
-      (!a.timeIn || a.timeIn === "NA")
-    );
-  });
+  const absentToday = attendance.filter(a =>
+    a.date === today &&
+    (a.status || "").toLowerCase().includes("not marked")
+  );
 
-  const lateToday = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return (
-      d &&
-      d.toDateString() === today.toDateString() &&
-      a.lateHours &&
-      a.lateHours !== "On Time"
-    );
-  });
+  const lateToday = attendance.filter(a =>
+    a.date === today &&
+    a.timeIn &&
+    a.timeIn > "10:05"
+  );
 
   const now = new Date();
   const month = now.getMonth();
@@ -966,15 +814,14 @@ function parseDate(val) {
 
   const lateMap = {};
   attendance.forEach(a => {
-    if (a.month === month && a.year === year && a.timeIn && a.timeIn.includes(":")) {
-      const mins =
-        Number(a.timeIn.split(":")[0]) * 60 +
-        Number(a.timeIn.split(":")[1]);
-
-      if (mins > 605) {
-        lateMap[a.employeeEmail] =
-          (lateMap[a.employeeEmail] || 0) + 1;
-      }
+    if (
+      a.month === month &&
+      a.year === year &&
+      a.timeIn &&
+      a.timeIn > "10:05"
+    ) {
+      lateMap[a.employeeEmail] =
+        (lateMap[a.employeeEmail] || 0) + 1;
     }
   });
 
@@ -983,74 +830,66 @@ function parseDate(val) {
     .sort((a, b) => b.count - a.count);
 
   return (
-<div className="dashboard-row">
+    <div className="row">
 
-      {/* ABSENT */}
-      <div className="card">
+      <div className="card" style={{flex:1}}>
         <strong>Absent Today</strong>
-        <div className="table-scroll">
-          <table>
-            <tbody>
-              {absentToday.map((a,i)=>{
-                const emp = getEmp(a.employeeEmail);
-                return (
-                  <tr key={i}>
-                    <td>{emp?.name}</td>
-                    <td>{emp?.department}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <table>
+          <tbody>
+            {absentToday.map((a,i)=>{
+              const emp = getEmp(a.employeeEmail);
+              return (
+                <tr key={i}>
+                  <td>{emp?.name}</td>
+                  <td>{emp?.department}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* LATE */}
-      <div className="card">
+      <div className="card" style={{flex:1}}>
         <strong>Late Today</strong>
-        <div className="table-scroll">
-          <table>
-            <tbody>
-              {lateToday.map((a,i)=>{
-                const emp = getEmp(a.employeeEmail);
-                return (
-                  <tr key={i}>
-                    <td>{emp?.name}</td>
-                    <td>{a.timeIn}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <table>
+          <tbody>
+            {lateToday.map((a,i)=>{
+              const emp = getEmp(a.employeeEmail);
+              return (
+                <tr key={i}>
+                  <td>{emp?.name}</td>
+                  <td>{a.timeIn}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* MOST LATE */}
-      <div className="card">
+      <div className="card" style={{flex:1}}>
         <strong>Most Late This Month</strong>
-        <div className="table-scroll">
-          <table>
-            <tbody>
-              {mostLate.map((r,i)=>{
-                const emp = getEmp(r.email);
-                return (
-                  <tr key={i}>
-                    <td>{emp?.name}</td>
-                    <td>{r.count}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <table>
+          <tbody>
+            {mostLate.map((r,i)=>{
+              const emp = getEmp(r.email);
+              return (
+                <tr key={i}>
+                  <td>{emp?.name}</td>
+                  <td>{r.count}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
     </div>
   );
 }
 
+
 /* ================= MAIN DASHBOARD ================= */
-function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
+function HRDashboard({ employees, attendance, leaves, agenda }) {
   return (
     <>
       <HRKPIs
@@ -1058,53 +897,25 @@ function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
         attendance={attendance}
         leaves={leaves}
       />
-{/* ================= CHART SECTION ================= */}
-<div style={{marginTop:20}}>
 
-  <div style={{
-    fontSize:18,
-    fontWeight:700,
-    marginBottom:12
-  }}>
-    Analytics Overview
-  </div>
+      <div className="row">
+        <div className="card">
+          <strong>Attendance Trend</strong>
+          <AttendanceChart attendance={attendance} />
+        </div>
 
-  <div className="row">
-    <div className="card">
-      <strong>Attendance Trend</strong>
-      <AttendanceChart attendance={attendance} />
-    </div>
+        <div className="card">
+          <strong>Leave Distribution</strong>
+          <LeaveChart leaves={leaves} />
+        </div>
 
-    <div className="card">
-      <strong>Leave Distribution</strong>
-      <LeaveChart leaves={leaves} leaveSummary={leaveSummary} />
-    </div>
+        <div className="card">
+          <strong>Task Completion</strong>
+          <TaskChart agenda={agenda} />
+        </div>
+      </div>
 
-    <div className="card">
-      <strong>Task Completion</strong>
-      <TaskChart agenda={agenda} />
-    </div>
-  </div>
-
-</div>
-
-
-{/* ================= TABLE SECTION ================= */}
-<div style={{marginTop:30}}>
-
-  <div style={{
-    fontSize:18,
-    fontWeight:700,
-    marginBottom:12
-  }}>
-   <div className="section-title">Daily Insights</div>
-
-  </div>
-
-  <HRLists employees={employees} attendance={attendance} />
-
-</div>
-
+      <HRLists employees={employees} attendance={attendance} />
     </>
   );
 }
@@ -2062,12 +1873,11 @@ if (selectedEmployeeEmail) {
         </div>
 {activeTab === 'Dashboard' && (
   <HRDashboard
-  employees={employees}
-  attendance={filteredAttendance}
-  leaves={filteredLeaves}
-  agenda={filteredAgenda}
-  leaveSummary={filteredLeaveSummary}
-/>
+    employees={employees}
+    attendance={filteredAttendance}
+    leaves={filteredLeaves}
+    agenda={filteredAgenda}
+  />
 )}
 
         {activeTab === 'Attendance' && (
