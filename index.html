@@ -872,19 +872,25 @@ function TaskChart({ agenda }) {
     return () => chartRef.current?.destroy();
   }, [agenda]);
 
-  return <canvas ref={ref} height="120"></canvas>;
-}
- 
-function parseDate(val) {
-  if (!val) return null;
-  const d = new Date(val);
   return (
   <div style={{height:"350px", width:"100%"}}>
     <canvas ref={ref}></canvas>
   </div>
 );
-
 }
+ 
+function parseDate(val) {
+  if (!val) return null;
+
+  // handle Excel serial date
+  if (typeof val === "number") {
+    return excelSerialToDate(val);
+  }
+
+  const d = new Date(val);
+  return isNaN(d) ? null : d;
+}
+
 
 
   function HRLists({ employees, attendance }) {
@@ -2025,6 +2031,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
