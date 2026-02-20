@@ -818,7 +818,12 @@ options:{
   }
 }
 });
+return () => chartRef.current?.destroy();
 
+  }, [attendance]);
+
+  return <canvas ref={ref}></canvas>;
+}
 /* ================= LEAVE PIE ================= */
 function LeaveChart({ leaves, leaveSummary }) {
   const ref = React.useRef();
@@ -2046,6 +2051,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
