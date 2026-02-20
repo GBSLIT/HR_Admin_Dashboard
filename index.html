@@ -516,6 +516,10 @@
 
 <script type="text/babel">
 const { useState, useEffect } = React;
+  const OWNER_EMAILS = [
+  "amjad@globalbasesourcing.com",
+  "azhar@globalbasesourcing.com"
+].map(e => e.toLowerCase());
 const APPLY_LEAVE_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf0k4lKKmwB8LWmzPxEb07Q_X-zT8-sSDghHl79wHvtXLSDeA/viewform";
 // TEMP LINKS – replace later
 const MARK_ATTENDANCE_URL = "https://script.google.com/a/macros/globalbasesourcing.com/s/AKfycbzqqbsaeEpvXupmGG8ew95qckMPPRY3CyhJu1Fwn5jHR6ugAIrow6eSjNSRrAihxxiaCA/exec";
@@ -1645,7 +1649,11 @@ function App() {
           null;
 
         // commit employees only when fetched & mapped
-        setEmployees(mappedEmps);
+        setEmployees(
+  mappedEmps.filter(emp =>
+    !OWNER_EMAILS.includes(emp.email?.toLowerCase())
+  )
+);
         if (me) {
           me = { ...me, email: me.email || me.primaryEmail || me.altEmail };
           setCurrentEmployee(me);
@@ -2060,6 +2068,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
