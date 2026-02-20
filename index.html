@@ -710,12 +710,7 @@ function HRKPIs({ employees, attendance, leaves }) {
       a.timeIn !== "NA";
   }).length;
 
-  const absent = attendance.filter(a => {
-    const d = parseDate(a.date);
-    return d &&
-      d.toDateString() === today.toDateString() &&
-      (!a.timeIn || a.timeIn === "NA");
-  }).length;
+ const absent = employees.length - present;
 
   const late = attendance.filter(a => {
     const d = parseDate(a.date);
@@ -789,31 +784,38 @@ function AttendanceChart({ attendance }) {
           tension:.3
         }]
       },
-      options:{
-        maintainAspectRatio:false,
-        scales:{
-          x:{
-            title:{display:true, text:"Date of Month"}
-          },
-          y:{
-            min:420,
-            max:1200,
-            ticks:{
-              stepSize:30,
-              callback:(val)=>{
-                const h=Math.floor(val/60);
-                const m=val%60;
-                return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
-              }
-            },
-            title:{display:true, text:"Check-In Time"}
-          }
+options:{
+  maintainAspectRatio:false,
+  scales:{
+    x:{
+      title:{display:true, text:"Date of Month"}
+    },
+    y:{
+      min:420,
+      max:1200,
+      ticks:{
+        stepSize:30,
+        callback:(val)=>{
+          const h=Math.floor(val/60);
+          const m=val%60;
+          return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
+        }
+      },
+      title:{display:true, text:"Check-In Time"}
+    }
+  },
+  plugins:{
+    tooltip:{
+      callbacks:{
+        label:(ctx)=>{
+          const val = ctx.raw;
+          const h=Math.floor(val/60);
+          const m=val%60;
+          return `Check-In Time: ${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
         }
       }
-    });
-  }, [attendance]);
-
-  return <canvas ref={ref}></canvas>;
+    }
+  }
 }
 
 
@@ -899,14 +901,18 @@ const today = new Date();
   e.email?.toLowerCase() === email?.toLowerCase()
 );
 
-  const absentToday = attendance.filter(a => {
-  const d = parseDate(a.date);
-  return (
-    d &&
-    d.toDateString() === today.toDateString() &&
-    (!a.timeIn || a.timeIn === "NA")
-  );
-});
+ const presentEmails = attendance
+  .filter(a=>{
+    const d=parseDate(a.date);
+    return d &&
+      d.toDateString()===today.toDateString() &&
+      a.timeIn && a.timeIn!=="NA";
+  })
+  .map(a=>a.employeeEmail?.toLowerCase());
+
+const absentToday = employees.filter(emp =>
+  !presentEmails.includes(emp.email?.toLowerCase())
+);
 
   const lateToday = attendance.filter(a => {
   const d = parseDate(a.date);
@@ -950,8 +956,12 @@ const today = new Date();
         <strong>Absent Today</strong>
         <table>
           <tbody>
-            {absentToday.map((a,i)=>{
-              const emp = getEmp(a.employeeEmail);
+            {absentToday.map((emp,i)=>(
+  <tr key={i}>
+    <td>{emp.name}</td>
+    <td>{emp.department}</td>
+  </tr>
+))}
               return (
                 <tr key={i}>
                   <td>{emp?.name}</td>
@@ -2036,5 +2046,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
