@@ -1813,18 +1813,22 @@ if (calcRows && calcRows.length) {
       /* ===== 5) WEEKLY AGENDA TABLE ===== */
       const agendaRows = await window.fetchOneDriveTable("weeklyAgenda").catch(()=>null);
       if (agendaRows && agendaRows.length) {
-        let mapped = agendaRows.map(r => ({
-          taskNo: r["Task No"] || r.TaskNo || "",
-          taskDetails: r["Task Details"] || r.TaskDetails || "",
-          assignerEmail: r["Assigner Email Id"] || r.AssignerEmailId || "",
-          assigneeEmail: r["Assignee Email Id"] || r.AssigneeEmailId || "",
-          initialTarget: formatExcelDate(r["Initial Target Date"] || r.InitialTargetDate || ""),
-          submissionType: r["Submission Type"] || r.SubmissionType || "",
-          completionPercent: r["Completion Status %"] || r.CompletionStatus || "",
-          updateRemarks: r["Update Remarks"] || r.UpdateRemarks || "",
-          completionDate: formatExcelDate(r["Completion Date"] || r.CompletionDate || ""),
-          updateLink: r["Update Link"] || r.UpdateLink || ""
-        }));
+       let mapped = agendaRows
+  .filter(r =>
+    r["Task No"] || r.TaskNo || r["Task Details"] || r.TaskDetails
+  ) // 👈 removes blank rows
+  .map(r => ({
+    taskNo: r["Task No"] || r.TaskNo || "",
+    taskDetails: r["Task Details"] || r.TaskDetails || "",
+    assignerEmail: r["Assigner Email Id"] || r.AssignerEmailId || "",
+    assigneeEmail: r["Assignee Email Id"] || r.AssigneeEmailId || "",
+    initialTarget: formatExcelDate(r["Initial Target Date"] || r.InitialTargetDate || ""),
+    submissionType: r["Submission Type"] || r.SubmissionType || "",
+    completionPercent: r["Completion Status %"] || r.CompletionStatus || "",
+    updateRemarks: r["Update Remarks"] || r.UpdateRemarks || "",
+    completionDate: formatExcelDate(r["Completion Date"] || r.CompletionDate || ""),
+    updateLink: r["Update Link"] || r.UpdateLink || ""
+  }));
 
         setWeeklyAgenda(mapped);
 
@@ -2052,6 +2056,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
