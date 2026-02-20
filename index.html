@@ -1011,7 +1011,14 @@ const absentToday = employees.filter(emp =>
 
 
 /* ================= MAIN DASHBOARD ================= */
-function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
+function HRDashboard({
+  employees,
+  attendance,
+  leaves,
+  agenda,
+  leaveSummary,
+  fullAttendance   // 👈 NEW
+}) {
   return (
     <>
       <HRKPIs
@@ -1045,7 +1052,7 @@ function HRDashboard({ employees, attendance, leaves, agenda, leaveSummary }) {
 </div>
 
 
-      <HRLists employees={employees} attendance={attendance} />
+      <HRLists employees={employees} attendance={fullAttendance} />
     </>
   );
 }
@@ -2002,9 +2009,10 @@ if (selectedEmployeeEmail) {
 
         </div>
 {activeTab === 'Dashboard' && (
-  <HRDashboard
+ <HRDashboard
   employees={employees}
-  attendance={filteredAttendance}
+  attendance={filteredAttendance}      // for charts & KPIs
+  fullAttendance={attendance}           // for tables (constant)
   leaves={filteredLeaves}
   agenda={filteredAgenda}
   leaveSummary={filteredLeaveSummary}
@@ -2044,6 +2052,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
