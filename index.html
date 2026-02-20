@@ -960,21 +960,14 @@ const absentToday = employees.filter(emp =>
       <div className="card" style={{flex:1}}>
         <strong>Absent Today</strong>
         <table>
-          <tbody>
-            {absentToday.map((emp,i)=>(
-  <tr key={i}>
-    <td>{emp.name}</td>
-    <td>{emp.department}</td>
-  </tr>
-))}
-              return (
-                <tr key={i}>
-                  <td>{emp?.name}</td>
-                  <td>{emp?.department}</td>
-                </tr>
-              );
-            })}
-          </tbody>
+         <tbody>
+  {absentToday.map((emp,i)=>(
+    <tr key={i}>
+      <td>{emp.name}</td>
+      <td>{emp.department}</td>
+    </tr>
+  ))}
+</tbody>
         </table>
       </div>
 
@@ -2051,6 +2044,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 </body>
 </html>
+
 
 
 
